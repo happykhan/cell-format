@@ -1,114 +1,113 @@
-# Cell organisation format - Wolvercote format
+# Wolvercote format
 
-## Objective
-To describe the composition and organisation of bacterial genomes focusing on the distribution of mobile genetic elements.
+A compact, human-readable notation for describing the organisation of bacterial genomes — inspired by the Newick format for phylogenetic trees.
 
-## Motivation
-Long-read sequencing has enabled the description of the complete genomic composition of bacterial cells and the identification of the location of its mobile genetic elements. Through hybrid assemblies, we are capable of characterizing complete plasmids and accurately describing transposons, previously a challenging task due to its repetitive nature. As we are able to better understand the genomic organization of bacterial cells, we need a common language to describe the location of its mobile genetic elements in the context of all its replicons. For this purpose, we present a computer-friendly format, inspired by the Newick format for trees, which aims to be readable to the human eye.
+## Overview
 
-## Definition
+Long-read sequencing now routinely produces complete bacterial genome assemblies, revealing the full complement of chromosomes, plasmids, and mobile genetic elements (MGEs) in a cell. The Wolvercote format provides a standard way to record and share this information in a single line of text.
 
-Describe main format
+**Key features**
 
-## Annotation
+- Describes chromosomes, plasmids, transposons, integrons, and other MGEs
+- Captures nested containment (e.g. an integron inside a plasmid)
+- Represents multiple cells in one string (e.g. two strains sharing a plasmid)
+- Supports free-text labels and key-value attributes
+- Machine-parseable and human-readable
 
-Describe the ability to annotate using `:`
+## Web app
+
+**[wolvercote.genomicx.org](https://wolvercote.genomicx.org)** — paste a Wolvercote string and get an SVG diagram. Or upload a GenBank/GFF3 file to generate the format automatically.
+
+## Format definition
 
 ### Grammar
 
 ```
-CellSet → Cell | Cell ";" CellSet
-Cell → CellContent | CellContent "," Cell
-CellContent → ChromosomeSet | ChromosomeSet "," NonChromosomeSet
-ChromosomeSet → Chromosome | Chromosome "," ChromosomeSet
-NonChromosomeSet → NonChromosome | NonChromosome ", NonChromosomeSet
-Chromosome → "(" NonChromosome ")" Label | "(" NonChromosome ")" Label AttributeSet
-NonChromosome →  empty | "{" NonChromosome "}" Label | "{" NonChromosome "}" Label AttributeSet
-Label → empty | string
+CellSet      → Cell (';' Cell)*
+Cell         → Replicon (',' Replicon)*
+Replicon     → Chromosome | MGE
+Chromosome   → '(' MGE* ')' Label AttributeSet?
+MGE          → '{' MGE* '}' Label AttributeSet?
+Label        → string | empty
+AttributeSet → '[' KeyValue (',' KeyValue)* ']'
+KeyValue     → Key '=' '"' Value '"'
 ```
 
-## Examples
+- `( ... )` — chromosome
+- `{ ... }` — non-chromosomal element (plasmid, transposon, integron, phage, etc.)
+- `;` — separates cells in a multi-cell set
+- `,` — separates replicons within a cell
+- `[key="value"]` — optional attributes on any element
 
-### Example 1
+### Examples
 
-* A cell with a single chromosome carrying an integron
-
-<img src="img/sample-1.png" alt="drawing" width="40%"/>
-
+**Single chromosome with an integron**
 ```
 ({}integron)my_chr
 ```
 
-### Example 2
-
-* A cell with a single chromosome and single plasmid
-
-<img src="img/sample-2.png" alt="drawing" width="40%"/>
-
+**Chromosome and a plasmid**
 ```
-()chr1,{}pBAD
+()chr1, {}pBAD
 ```
 
-### Example 3
-
-* A cell with a single chromosome, a single plasmid, and another copy of the plasmid integrated in the chromosome
-
-<img src="img/sample-3.png" alt="drawing" width="40%"/>
-
+**Chromosome and plasmid where the plasmid is also integrated in the chromosome**
 ```
-({}plasmid1)chromosome,{}plasmid1
+({}plasmid1)chromosome, {}plasmid1
 ```
 
-### Example 4
-
-* A cell with a single chromosome and two plasmids, where each plasmid carry identical copies of an integron
-
-<img src="img/sample-4.png" alt="drawing" width="40%"/>
-
-```
-()chromosome, { {}integronA }plasmid1, { {}integronA }plasmid2
-```
-
-### Example 5
-
-* A cell with a single chromosome carrying a transposon and a plasmid carrying a transposon and an integron
-
-<img src="img/sample-5.png" alt="drawing" width="40%"/>
-
+**Chromosome with a transposon; plasmid carrying a transposon and an integron**
 ```
 ( {}transposon1 )chromosome , { {}transposon2, {}integron }plasmid
 ```
 
-### Example 6
-
-* Two cells from different species but both carrying the same plasmid
-
-<img src="img/sample-6.png" alt="drawing" width="40%"/>
-
+**Two cells sharing the same plasmid**
 ```
-()chromosome1,{}plasmidA ; ()chromosome2,{}plasmidA
+()chromosome1, {}plasmidA ; ()chromosome2, {}plasmidA
 ```
 
-### Example 7
-
-* A cell with a single chromosome with one attribute
-
+**Chromosome with attributes**
 ```
-()chromosome[attribute="value"]
+()chromosome[organism="Escherichia coli", strain="K-12"]
 ```
 
-### Example 8
-
-* A cell with a single chromosome with two attributes
-
+**Plasmid with nested integrons, each carrying identical gene cassettes**
 ```
-()chromosome[attribute="value", attribute 2="value a,value b,value c"]
+()chromosome, { {}integronA }plasmid1, { {}integronA }plasmid2
 ```
 
-### Authors
+## Web app (`webapp/`)
 
-#### Centre for Genomic Pathogen Surveilance, University of Oxford
-* Julio Diaz Caballero
-* Nabil-Fareed Alikhan
-* Khalil AbuDahab
-* David Aanensen
+A fully client-side React application built with [@genomicx/ui](https://github.com/genomicx/genomicx-ui).
+
+### Features
+
+- **Live parser** — type or paste a Wolvercote string; errors shown inline with position
+- **SVG renderer** — circular diagrams: blue for chromosomes, green for plasmids, coloured rectangles on borders for MGEs
+- **GenBank / GFF3 import** — upload an annotated assembly file to auto-generate the Wolvercote string
+- **Download** — export the diagram as SVG or the format string as plain text
+- **No server required** — everything runs in the browser
+
+### Run locally
+
+```bash
+cd webapp
+npm install
+npm run dev
+```
+
+### Build
+
+```bash
+cd webapp
+npm run build   # output in webapp/dist/
+```
+
+## Authors
+
+Centre for Genomic Pathogen Surveillance, University of Oxford
+
+- Julio Diaz Caballero
+- Nabil-Fareed Alikhan
+- Khalil AbuDahab
+- David Aanensen
