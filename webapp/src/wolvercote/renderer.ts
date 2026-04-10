@@ -13,8 +13,6 @@ const MGE_FILL = '#e6f5e6'
 const MGE_STROKE = '#3a9943'
 const MGE_SW = 5
 
-const ELEMENT_COLOURS = ['#e05252', '#9b59b6', '#f39c12', '#16a085', '#2980b9', '#e74c3c']
-
 const CHR_R = 90
 const MGE_R = 44
 const PAD = 24
@@ -29,22 +27,17 @@ const TYPE_COLOURS: Record<string, string> = {
   transposon: '#e05252',
   integron: '#9b59b6',
   insertion_sequence: '#f39c12',
-  phage: '#f39c12',
+  phage: '#16a085',
   gene: '#c0392b',
   plasmid: MGE_STROKE,
+  element: '#aaaaaa',
   other: '#888888',
 }
 
-function elementColour(label: string, index: number, customColour?: string, type?: string): string {
+function elementColour(_label: string, _index: number, customColour?: string, type?: string): string {
   if (customColour) return customColour
   if (type && TYPE_COLOURS[type]) return TYPE_COLOURS[type]
-  const l = label.toLowerCase()
-  if (l.includes('transposon') || l.startsWith('tn')) return '#e05252'
-  if (l.includes('integron') || l.startsWith('int')) return '#9b59b6'
-  if (l.includes('phage')) return '#f39c12'
-  if (l.includes('insertion') || l.startsWith('is')) return '#f39c12'
-  if (l.includes('plasmid') || l.startsWith('p')) return MGE_STROKE   // plasmids → green
-  return ELEMENT_COLOURS[index % ELEMENT_COLOURS.length]
+  return '#aaaaaa'
 }
 
 function esc(s: string): string {

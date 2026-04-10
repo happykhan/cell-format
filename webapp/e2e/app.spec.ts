@@ -231,7 +231,7 @@ test.describe('builder colour feature', () => {
     expect(val).toContain('colour="#ff0000"')
   })
 
-  test('Other MGE type is available when adding inside a plasmid', async ({ page }) => {
+  test('Element type is available when adding inside a plasmid', async ({ page }) => {
     await page.goto('/')
     await page.locator('.wolvercote-editor').fill('')
     await page.getByRole('button', { name: '+ Add element' }).click()
@@ -239,7 +239,7 @@ test.describe('builder colour feature', () => {
     await page.locator('.builder-modal-input').first().fill('pTest')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await page.getByRole('button', { name: /Add inside pTest/ }).click()
-    await expect(page.locator('.builder-modal-select option[value="other"]')).toBeAttached()
+    await expect(page.locator('.builder-modal-select option[value="element"]')).toBeAttached()
   })
 
   test('top-level Add element only offers chromosome and plasmid', async ({ page }) => {

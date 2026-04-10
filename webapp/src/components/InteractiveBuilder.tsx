@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 import type { CellSet, ChromosomeNode, MGENode } from '../wolvercote/types'
 
-type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'gene' | 'other'
+type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'gene' | 'element'
 
 const ELEMENT_LABELS: Record<ElementType, string> = {
   chromosome: 'Chromosome',
@@ -16,7 +16,7 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
   insertion_sequence: 'Insertion sequence',
   phage: 'Prophage',
   gene: 'Gene',
-  other: 'Other',
+  element: 'Element',
 }
 
 const DEFAULT_COLOURS: Record<string, string> = {
@@ -27,7 +27,7 @@ const DEFAULT_COLOURS: Record<string, string> = {
   insertion_sequence: '#f39c12',
   phage: '#16a085',
   gene: '#c0392b',
-  other: '#888888',
+  element: '#aaaaaa',
 }
 
 function resolveColour(type: ElementType, customColour?: string): string {
@@ -67,12 +67,12 @@ interface BuilderState {
   }>
 }
 
-function mgeItemStr(m: MGEItem): string {
-  const inner = m.mges.map(mgeItemStr).join(', ')
-  const defaultCol = DEFAULT_COLOURS[m.type] || '#888'
+function mgeItemStr(m: MGEItem, nested = false): string {
+  const inner = m.mges.map((child) => mgeItemStr(child, true)).join(', ')
+  const defaultCol = DEFAULT_COLOURS[m.type] || '#aaa'
   const attrParts: string[] = []
-  // Encode type when it can't be reliably inferred from the label alone
-  if (m.type !== 'plasmid' && m.type !== mgeTypeFromLabel(m.label)) {
+  // Only serialize type for nested elements that are not the generic default ('element')
+  if (nested && m.type !== 'element') {
     attrParts.push(`type="${m.type}"`)
   }
   if (m.colour && m.colour !== defaultCol) {
@@ -87,34 +87,25 @@ function stateToWolvercote(state: BuilderState): string {
     .map((cell) => {
       const parts: string[] = []
       for (const chr of cell.chromosomes) {
-        const inner = chr.mges.map(mgeItemStr).join(', ')
+        const inner = chr.mges.map((m) => mgeItemStr(m, true)).join(', ')
         parts.push(`(${inner})${chr.label}`)
       }
       for (const mge of cell.mges) {
-        parts.push(mgeItemStr(mge))
+        parts.push(mgeItemStr(mge, false))  // top-level → plasmid is default, no type attr
       }
       return parts.join(', ')
     })
     .join(' ; ')
 }
 
-function mgeTypeFromLabel(label: string): ElementType {
-  const l = label.toLowerCase()
-  if (l.includes('transposon') || /^tn\d/.test(l)) return 'transposon'
-  if (l.includes('integron') || /^int\d/.test(l)) return 'integron'
-  if (l.includes('insertion') || /^is\d/.test(l)) return 'insertion_sequence'
-  if (l.includes('phage')) return 'phage'
-  return 'plasmid'
-}
-
-function mgeNodeToItem(m: MGENode): MGEItem {
-  const type = (m.attributes.type as ElementType) || mgeTypeFromLabel(m.label)
-  const colour = m.attributes.colour || undefined
+function mgeNodeToItem(m: MGENode, nested = false): MGEItem {
+  const explicitType = m.attributes.type as ElementType | undefined
+  const type: ElementType = explicitType ?? (nested ? 'element' : 'plasmid')
   return {
     type,
     label: m.label,
-    colour,
-    mges: m.children.map(mgeNodeToItem),
+    colour: m.attributes.colour || undefined,
+    mges: m.children.map((child) => mgeNodeToItem(child, true)),
   }
 }
 
@@ -123,10 +114,10 @@ function cellSetToBuilderState(cs: CellSet): BuilderState {
     cells: cs.cells.map((cell) => ({
       chromosomes: cell.replicons
         .filter((r): r is ChromosomeNode => r.kind === 'chromosome')
-        .map((ch) => ({ label: ch.label, mges: ch.children.map(mgeNodeToItem) })),
+        .map((ch) => ({ label: ch.label, mges: ch.children.map((m) => mgeNodeToItem(m, true)) })),
       mges: cell.replicons
         .filter((r): r is MGENode => r.kind === 'mge')
-        .map(mgeNodeToItem),
+        .map((m) => mgeNodeToItem(m, false)),
     })),
   }
 }
@@ -185,7 +176,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   const openModal = (cellIdx: number, target: ModalTarget) => {
     setModal({ cellIdx, target, isEdit: false })
     setNewLabel('')
-    setNewType(target.kind === 'cell' ? 'chromosome' : 'gene')
+    setNewType(target.kind === 'cell' ? 'chromosome' : 'element')
     setNewColour('')
   }
 
@@ -289,7 +280,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   const typeOptions =
     modal?.target.kind === 'cell'
       ? (['chromosome', 'plasmid'] as ElementType[])  // top-level: replicons only
-      : (['gene', 'transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid', 'other'] as ElementType[])
+      : (['element', 'gene', 'transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid'] as ElementType[])
 
   function renderMGEItem(ci: number, path: MGEPath, item: MGEItem, depth: number) {
     const colour = resolveColour(item.type, item.colour)
