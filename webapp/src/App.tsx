@@ -17,8 +17,7 @@ const EXAMPLES = [
   { label: 'KPC in Tn4401 (pKpQIL)', value: '()chromosome, { { {}blaKPC-3[type="gene"] }Tn4401[type="transposon"] }pKpQIL' },
   { label: 'OXA-48 in Tn1999', value: '()chromosome, { { {}blaOXA-48[type="gene"] }Tn1999[type="transposon"] }pOXA-48a' },
   { label: 'CTX-M on ISEcp1', value: '()chromosome, { { {}blaCTX-M-15[type="gene"] }ISEcp1[type="insertion_sequence"] }pCTX-M-3' },
-  { label: 'Kp CAV1193 (real)', value: '()CAV1193, {}pCAV1193-166, {}pCAV1193-258, {}pCAV1193-78, { { {}blaKPC-3[type="gene"] }Tn4401[type="transposon"] }pKPC_CAV1193' },
-  { label: 'With attributes', value: '()chromosome, { {}blaKPC[type="gene"], {}ISEcp1[type="insertion_sequence"], {}intI[type="integron"] }pResistance' },
+  { label: 'Kp CAV1193', value: '()CAV1193, {}pCAV1193-166, {}pCAV1193-258, {}pCAV1193-78, { { {}blaKPC-3[type="gene"] }Tn4401[type="transposon"] }pKPC_CAV1193' },
 ]
 
 export default function App() {
@@ -193,9 +192,6 @@ export default function App() {
           <div className="format-bar-header">
             <div className="format-preview-label">Wolvercote format</div>
             <div className="format-bar-actions">
-              <button className="copy-btn" onClick={copyFormat} disabled={!text} title="Copy to clipboard">
-                {copied ? 'Copied!' : 'Copy'}
-              </button>
               <button className="gx-btn gx-btn-secondary" onClick={downloadWolv} disabled={!text}>
                 Download .txt
               </button>
@@ -215,12 +211,17 @@ export default function App() {
             placeholder="e.g. ()chr1,{}pBAD"
             rows={2}
           />
-          {!parsed.ok && (
-            <div className="validation-error">
-              {parsed.error.message}
-              {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
-            </div>
-          )}
+          <div className="format-bar-below">
+            {!parsed.ok ? (
+              <div className="validation-error">
+                {parsed.error.message}
+                {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
+              </div>
+            ) : <div />}
+            <button className="copy-btn" onClick={copyFormat} disabled={!text} title="Copy to clipboard">
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          </div>
         </div>
 
         <div className="editor-layout">

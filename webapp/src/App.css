@@ -277,6 +277,14 @@
   flex-wrap: wrap;
 }
 
+.format-bar-below {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
 /* ── Two-column layout ───────────────────────── */
 .editor-layout {
   display: grid;

@@ -118,6 +118,12 @@ function arcAnchor(angle: number): string {
   return 'middle'
 }
 
+/** Maximum nesting depth of a subtree (0 = leaf). */
+function subtreeDepth(el: MGENode): number {
+  if (!el.children.length) return 0
+  return 1 + Math.max(...el.children.map(subtreeDepth))
+}
+
 /** Total outward extent of arc bands for a subtree at a given initial band width. */
 function totalBandExtent(elements: MGENode[], bandW: number): number {
   if (!elements.length || bandW < 3) return 0
@@ -177,7 +183,10 @@ function renderNestedArcs(
     svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
 
     if (el.label && arcSpan > 0.18) {
-      placeArcLabel(el, cx, cy, outerR, mid, labelRing, svg, 10)
+      // Push container labels out by 18px per nesting level so they don't
+      // overlap child labels at the same angle
+      const thisRing = labelRing + subtreeDepth(el) * 18
+      placeArcLabel(el, cx, cy, outerR, mid, thisRing, svg, 10)
     }
 
     if (el.children.length) {
@@ -218,7 +227,8 @@ function renderArcs(
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
     if (el.label) {
-      placeArcLabel(el, cx, cy, outerR, center, labelRing, svg, 11)
+      const thisRing = labelRing + subtreeDepth(el) * 18
+      placeArcLabel(el, cx, cy, outerR, center, thisRing, svg, 11)
     }
 
     if (el.children.length) {
@@ -233,14 +243,16 @@ function measureCell(cell: Cell): [number, number] {
 
   // Compute max label ring extent across all chromosomes and MGEs
   const chrLabelExt = chrs.reduce((mx, ch) => {
+    const maxDepth = ch.children.length ? Math.max(...ch.children.map(subtreeDepth)) + 1 : 0
     const ext = ch.children.length
-      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 50
+      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 80 + maxDepth * 18
       : 0
     return Math.max(mx, ext)
   }, 60)
   const mgeLabelExt = mges.reduce((mx, mge) => {
+    const maxDepth = mge.children.length ? Math.max(...mge.children.map(subtreeDepth)) + 1 : 0
     const ext = mge.children.length
-      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 50
+      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 80 + maxDepth * 18
       : 0
     return Math.max(mx, ext)
   }, 50)

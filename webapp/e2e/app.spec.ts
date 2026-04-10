@@ -195,9 +195,9 @@ test.describe('Klebsiella examples', () => {
     await expect(page.locator('.validation-error')).not.toBeVisible()
   })
 
-  test('CAV1193 real genome example has multiple plasmids', async ({ page }) => {
+  test('CAV1193 example has multiple plasmids', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: 'Kp CAV1193 (real)' }).click()
+    await page.getByRole('button', { name: 'Kp CAV1193' }).click()
     const val = await page.locator('.wolvercote-editor').inputValue()
     expect(val).toContain('CAV1193')
     expect(val).toContain('pKPC_CAV1193')
