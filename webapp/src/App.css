@@ -388,6 +388,26 @@
 
 .builder-remove-btn:hover { color: var(--gx-error, #e05252); }
 
+/* Clickable label — looks like text, acts as edit trigger */
+.builder-label-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--gx-text);
+  text-align: left;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.15s;
+}
+
+.builder-label-btn:hover {
+  border-bottom-color: var(--gx-accent);
+  color: var(--gx-accent);
+}
+
 .builder-add-btn {
   margin-top: 0.4rem;
   font-size: 0.82rem;

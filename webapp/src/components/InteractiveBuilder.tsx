@@ -118,15 +118,19 @@ function getAtPath(root: MGEItem[], path: MGEPath): MGEItem {
   return node
 }
 
-// Modal identifies *where* to add the new element
+// Modal identifies *where* to add or what to edit
 type ModalTarget =
-  | { kind: 'cell' }                                    // add chr or top-level MGE to cell
-  | { kind: 'chr'; chrIdx: number }                     // add MGE inside chromosome
-  | { kind: 'mge'; path: MGEPath }                      // add MGE inside a (nested) top-level MGE
+  | { kind: 'cell' }                                              // add chr or top-level MGE to cell
+  | { kind: 'chr'; chrIdx: number }                               // add MGE inside chromosome
+  | { kind: 'mge'; path: MGEPath }                               // add MGE inside a (nested) MGE
+  | { kind: 'edit-chr'; chrIdx: number }                         // edit a chromosome's label
+  | { kind: 'edit-chr-child'; chrIdx: number; childIdx: number } // edit a chromosome child MGE
+  | { kind: 'edit-mge'; path: MGEPath }                          // edit a top-level or nested MGE
 
 interface ModalState {
   cellIdx: number
   target: ModalTarget
+  isEdit: boolean
 }
 
 interface Props {
@@ -153,9 +157,15 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
   const openModal = (cellIdx: number, target: ModalTarget) => {
     const forNested = target.kind !== 'cell'
-    setModal({ cellIdx, target })
+    setModal({ cellIdx, target, isEdit: false })
     setNewLabel('')
     setNewType(forNested ? 'transposon' : 'chromosome')
+  }
+
+  const openEdit = (cellIdx: number, target: ModalTarget, currentLabel: string, currentType: ElementType) => {
+    setModal({ cellIdx, target, isEdit: true })
+    setNewLabel(currentLabel)
+    setNewType(currentType)
   }
 
   const confirmAdd = () => {
@@ -164,22 +174,37 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     const next = JSON.parse(JSON.stringify(state)) as BuilderState
     const cell = next.cells[modal.cellIdx]
 
-    if (modal.target.kind === 'cell') {
-      if (newType === 'chromosome') {
-        cell.chromosomes.push({ label, mges: [] })
-      } else {
-        cell.mges.push({ type: newType, label, mges: [] })
+    if (modal.isEdit) {
+      // Edit mode — update existing element in place
+      const t = modal.target
+      if (t.kind === 'edit-chr') {
+        cell.chromosomes[t.chrIdx].label = label
+      } else if (t.kind === 'edit-chr-child') {
+        cell.chromosomes[t.chrIdx].mges[t.childIdx].label = label
+        cell.chromosomes[t.chrIdx].mges[t.childIdx].type = newType
+      } else if (t.kind === 'edit-mge') {
+        const item = t.path.length === 1 ? cell.mges[t.path[0]] : getAtPath(cell.mges, t.path)
+        item.label = label
+        item.type = newType
       }
-    } else if (modal.target.kind === 'chr') {
-      cell.chromosomes[modal.target.chrIdx].mges.push({ type: newType, label, mges: [] })
     } else {
-      // navigate to the right MGE in the tree and push a child
-      const { path } = modal.target
-      const root = cell.mges
-      if (path.length === 1) {
-        root[path[0]].mges.push({ type: newType, label, mges: [] })
-      } else {
-        getAtPath(root, path).mges.push({ type: newType, label, mges: [] })
+      // Add mode
+      if (modal.target.kind === 'cell') {
+        if (newType === 'chromosome') {
+          cell.chromosomes.push({ label, mges: [] })
+        } else {
+          cell.mges.push({ type: newType, label, mges: [] })
+        }
+      } else if (modal.target.kind === 'chr') {
+        cell.chromosomes[modal.target.chrIdx].mges.push({ type: newType, label, mges: [] })
+      } else if (modal.target.kind === 'mge') {
+        const { path } = modal.target
+        const root = cell.mges
+        if (path.length === 1) {
+          root[path[0]].mges.push({ type: newType, label, mges: [] })
+        } else {
+          getAtPath(root, path).mges.push({ type: newType, label, mges: [] })
+        }
       }
     }
 
@@ -216,6 +241,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     update(next)
   }
 
+  const isChrEdit = modal?.target.kind === 'edit-chr'
   const typeOptions =
     modal?.target.kind === 'cell'
       ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage'] as ElementType[])
@@ -228,7 +254,13 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
       <div key={path.join('-')} className="mge-card" style={{ borderLeftColor: colour }}>
         <div className="mge-card-header">
           {elementDot(item.type)}
-          <span className="mge-card-label">{item.label || `(${item.type})`}</span>
+          <button
+            className="builder-label-btn mge-card-label"
+            onClick={() => openEdit(ci, { kind: 'edit-mge', path }, item.label, item.type)}
+            title="Click to edit"
+          >
+            {item.label || `(${item.type})`}
+          </button>
           <button className="builder-remove-btn" title="Remove" onClick={() => removeMGE(ci, path)}>×</button>
         </div>
         {item.mges.map((child, ni) => renderMGEItem(ci, [...path, ni], child, depth + 1))}
@@ -244,22 +276,16 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
   function renderChrMGEItem(ci: number, chri: number, mgeIdx: number, item: MGEItem) {
     return (
-      <div key={mgeIdx}>
-        <div className="builder-nested">
-          {elementDot(item.type)}
-          <span>{item.label || `(${item.type})`}</span>
-          <button className="builder-remove-btn" onClick={() => removeChrMGE(ci, chri, mgeIdx)}>×</button>
-        </div>
-        {/* children of chr-level MGEs shown but not further nestable in this UI —
-            they come through via text→builder sync */}
-        {item.mges.map((child, ni) => (
-          <div key={ni} className="builder-nested" style={{ marginLeft: 16 }}>
-            {elementDot(child.type)}
-            <span style={{ color: 'var(--gx-text-muted)', fontSize: '0.82rem' }}>
-              {child.label || `(${child.type})`}
-            </span>
-          </div>
-        ))}
+      <div key={mgeIdx} className="builder-nested">
+        {elementDot(item.type)}
+        <button
+          className="builder-label-btn"
+          onClick={() => openEdit(ci, { kind: 'edit-chr-child', chrIdx: chri, childIdx: mgeIdx }, item.label, item.type)}
+          title="Click to edit"
+        >
+          {item.label || `(${item.type})`}
+        </button>
+        <button className="builder-remove-btn" onClick={() => removeChrMGE(ci, chri, mgeIdx)}>×</button>
       </div>
     )
   }
@@ -280,7 +306,13 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
             <div key={chri} className="builder-replicon builder-chr">
               <div className="builder-replicon-header">
                 {elementDot('chromosome')}
-                <span>{chr.label || '(chromosome)'}</span>
+                <button
+                  className="builder-label-btn"
+                  onClick={() => openEdit(ci, { kind: 'edit-chr', chrIdx: chri }, chr.label, 'chromosome')}
+                  title="Click to edit"
+                >
+                  {chr.label || '(chromosome)'}
+                </button>
                 <button className="builder-remove-btn" onClick={() => removeChromosome(ci, chri)}>×</button>
               </div>
               {chr.mges.map((m, mi) => renderChrMGEItem(ci, chri, mi, m))}
@@ -300,7 +332,13 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
               <div key={mi} className="mge-card" style={{ borderLeftColor: colour }}>
                 <div className="mge-card-header">
                   {elementDot(mge.type)}
-                  <span className="mge-card-label">{mge.label || `(${mge.type})`}</span>
+                  <button
+                    className="builder-label-btn mge-card-label"
+                    onClick={() => openEdit(ci, { kind: 'edit-mge', path: [mi] }, mge.label, mge.type)}
+                    title="Click to edit"
+                  >
+                    {mge.label || `(${mge.type})`}
+                  </button>
                   <button className="builder-remove-btn" onClick={() => removeMGE(ci, [mi])}>×</button>
                 </div>
                 {mge.mges.map((child, ni) => renderMGEItem(ci, [mi, ni], child, 1))}
@@ -329,21 +367,25 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
         <div className="builder-modal-overlay" onClick={() => setModal(null)}>
           <div className="builder-modal" onClick={(e) => e.stopPropagation()}>
             <div className="builder-modal-title">
-              {modal.target.kind === 'cell' ? 'Add element' : 'Add MGE'}
+              {modal.isEdit ? 'Edit element' : modal.target.kind === 'cell' ? 'Add element' : 'Add MGE'}
             </div>
 
-            <label className="builder-modal-label">Type</label>
-            <select
-              className="builder-modal-select"
-              value={newType}
-              onChange={(e) => setNewType(e.target.value as ElementType)}
-            >
-              {typeOptions.map((t) => (
-                <option key={t} value={t}>{ELEMENT_LABELS[t]}</option>
-              ))}
-            </select>
+            {!isChrEdit && (
+              <>
+                <label className="builder-modal-label">Type</label>
+                <select
+                  className="builder-modal-select"
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value as ElementType)}
+                >
+                  {typeOptions.map((t) => (
+                    <option key={t} value={t}>{ELEMENT_LABELS[t]}</option>
+                  ))}
+                </select>
+              </>
+            )}
 
-            <label className="builder-modal-label">Label (optional)</label>
+            <label className="builder-modal-label">Label</label>
             <input
               className="builder-modal-input"
               type="text"
@@ -356,7 +398,9 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
             <div className="builder-modal-actions">
               <button className="gx-btn gx-btn-secondary" onClick={() => setModal(null)}>Cancel</button>
-              <button className="gx-btn gx-btn-primary" onClick={confirmAdd}>Add</button>
+              <button className="gx-btn gx-btn-primary" onClick={confirmAdd}>
+                {modal.isEdit ? 'Save' : 'Add'}
+              </button>
             </div>
           </div>
         </div>
