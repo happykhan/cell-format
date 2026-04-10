@@ -224,11 +224,9 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
       const mx = mgeColX + MGE_R + PAD
       const my = startMY + i * (MGE_R * 2 + PAD + 30) + MGE_R
       svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
-      // Start MGE child arcs at 0 (right) to avoid clashing with the label above
-      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg, 0)
-      // Raise label above the arc band when children are present
-      const labelY = mge.children.length ? my - MGE_R - ARC_BAND_MGE - 14 : my - MGE_R - 10
-      if (mge.label) svg.text(mx, labelY, mge.label, 13)
+      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg)
+      // Label in the centre of the MGE circle (like chromosome labels), not above
+      if (mge.label) svg.text(mx, my + 5, mge.label, 13)
     })
     return mgeColX + MGE_R * 2 + PAD * 2 + 50
   }
