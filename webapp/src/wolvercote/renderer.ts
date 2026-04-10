@@ -252,16 +252,22 @@ function renderArcs(
       const ly = cy + (labelRing + 5) * Math.sin(center) + 4
       svg.text(lx, ly, spec.label, spec.fontSize, arcAnchor(center), '#444')
     } else {
-      // Multiple labels: stack vertically on the natural side
-      // (right for top/right arcs, left for left arcs)
+      // Multiple labels: stack vertically on one side, spokes to each label.
+      // Sort by arc-edge y so top arcs connect to top labels — no crossing spokes.
+      specs.sort((a, b) =>
+        (cy + a.outerR * Math.sin(a.arcMid)) - (cy + b.outerR * Math.sin(b.arcMid))
+      )
       const goRight = Math.cos(center) >= -0.3
-      const stackX = cx + (goRight ? 1 : -1) * (labelRing + 5)
-      const stackCenterY = cy + labelRing * Math.sin(center)
+      // Stack x: just past the arc bands' actual horizontal reach + clearance
+      const horizReach = Math.max(innerR, ...specs.map(s => s.outerR * Math.abs(Math.cos(s.arcMid))))
+      const stackX = cx + (goRight ? 1 : -1) * (horizReach + 20)
+      // Stack centred at the average y of the arc edges (keeps spokes short)
+      const avgArcY = specs.reduce((s, sp) => s + cy + sp.outerR * Math.sin(sp.arcMid), 0) / nl
       const anchor = goRight ? 'start' : 'end'
       const textX = stackX + (goRight ? 3 : -3)
 
       specs.forEach((spec, j) => {
-        const ry = stackCenterY + (j - (nl - 1) / 2) * LINE_H
+        const ry = avgArcY + (j - (nl - 1) / 2) * LINE_H
         svg.line(
           cx + spec.outerR * Math.cos(spec.arcMid),
           cy + spec.outerR * Math.sin(spec.arcMid),
@@ -274,90 +280,117 @@ function renderArcs(
   })
 }
 
-function measureCell(cell: Cell): [number, number] {
-  const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
-  const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
+/** Radial extent of arc bands + label spoke + text clearance from a circle edge. */
+const LABEL_CLEAR = 150
 
-  // Compute max label ring extent across all chromosomes and MGEs
-  const chrLabelExt = chrs.reduce((mx, ch) => {
-    const ext = ch.children.length
-      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 150
-      : 0
-    return Math.max(mx, ext)
-  }, 60)
-  const mgeLabelExt = mges.reduce((mx, mge) => {
-    const ext = mge.children.length
-      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 150
-      : 0
-    return Math.max(mx, ext)
-  }, 50)
-
-  const chrColW = CHR_R * 2 + PAD * 2 + chrLabelExt
-  const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + mgeLabelExt : 0
-  const width = chrColW + mgeColW + PAD
-
-  const chrColH = Math.max(chrs.length, 1) * (CHR_R * 2 + PAD + 160) + PAD + 30
-  const mgeColH = mges.length ? mges.length * (MGE_R * 2 + PAD + 30) + PAD + 30 : 0
-  const height = Math.max(chrColH, mgeColH, CHR_R * 2 + PAD * 2 + 60)
-
-  return [width, height]
+function arcLabelExtent(children: MGENode[], band: number): number {
+  if (!children.length) return 0
+  return band + totalBandExtent(children, band * ARC_TAPER) + 14 + LABEL_CLEAR
 }
 
-function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVGBuilder): number {
+interface CellLayout { chrRingR: number; mgeRingR: number; totalR: number }
+
+/**
+ * Compute ring radii for a cell.
+ * – Chromosomes occupy an inner ring (radius 0 when there is only one).
+ * – MGEs orbit in an outer ring, spaced to avoid overlap.
+ */
+function computeCellLayout(cell: Cell): CellLayout {
   const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
   const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
-  const chrColW = CHR_R * 2 + PAD * 2
+  const nChr = chrs.length
+  const nMge = mges.length
 
-  // Chromosomes — vertically centred
-  if (chrs.length) {
-    const totalH = chrs.length * CHR_R * 2 + (chrs.length - 1) * (PAD + 160)
-    const startY = oy + (height - totalH) / 2
-    chrs.forEach((ch, i) => {
-      const cx = ox + chrColW / 2        // centred so arcs have equal space on both sides
-      const cy = startY + i * (CHR_R * 2 + PAD + 160) + CHR_R
-      svg.circle(cx, cy, CHR_R, CHR_FILL, CHR_STROKE, CHR_SW)
-      renderArcs(ch.children, cx, cy, CHR_R, ARC_BAND_CHR, svg)
-      if (ch.label) svg.text(cx, cy + 5 + (ch.children.length ? 0 : CHR_R * 0.4), ch.label, 15)
-    })
+  // Chromosome ring radius (0 for a single chromosome placed at the cell centre)
+  const chrRingR = nChr > 1 ? (CHR_R + PAD / 2) / Math.sin(Math.PI / nChr) : 0
+
+  // Farthest physical extent of chr circles + arc bands (from cell centre)
+  const chrBandExt = nChr > 0
+    ? chrs.reduce((mx, ch) =>
+        Math.max(mx, ch.children.length ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) : 0), 0)
+    : 0
+  const chrPhysOuterR = nChr > 0 ? chrRingR + CHR_R + chrBandExt : 0
+
+  // Farthest label reach from chr arcs (from cell centre)
+  const chrLabelOuterR = nChr > 0
+    ? chrRingR + CHR_R + chrs.reduce((mx, ch) => Math.max(mx, arcLabelExtent(ch.children, ARC_BAND_CHR)), 0)
+    : 0
+
+  // MGE ring
+  let mgeRingR = 0
+  let mgePhysOuterR = 0
+  let mgeLabelOuterR = 0
+
+  if (nMge > 0) {
+    const baseR = (nChr > 0 ? chrPhysOuterR + PAD : 0) + MGE_R
+    const minNonOverlap = nMge > 1 ? (MGE_R + PAD / 2) / Math.sin(Math.PI / nMge) : 0
+    mgeRingR = Math.max(baseR, minNonOverlap)
+
+    const mgeBandExt = mges.reduce((mx, mge) =>
+      Math.max(mx, mge.children.length ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) : 0), 0)
+    const mgeLabelExt = mges.reduce((mx, mge) => Math.max(mx, arcLabelExtent(mge.children, ARC_BAND_MGE)), 0)
+
+    mgePhysOuterR = mgeRingR + MGE_R + mgeBandExt
+    mgeLabelOuterR = mgeRingR + MGE_R + mgeLabelExt
   }
 
-  // MGEs — right column
-  const mgeColX = ox + chrColW + PAD
-  if (mges.length) {
-    const totalMH = mges.length * MGE_R * 2 + (mges.length - 1) * PAD
-    const labelSpace = mges.length * 30
-    const startMY = oy + (height - totalMH - labelSpace) / 2 + 30
-    mges.forEach((mge, i) => {
-      const mx = mgeColX + MGE_R + PAD
-      const my = startMY + i * (MGE_R * 2 + PAD + 30) + MGE_R
-      svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
-      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg)
-      // Label in the centre of the MGE circle (like chromosome labels), not above
-      if (mge.label) svg.text(mx, my + 5, mge.label, 13)
-    })
-    return mgeColX + MGE_R * 2 + PAD * 2 + 50
-  }
+  const totalR = Math.max(
+    chrLabelOuterR,
+    nMge > 0 ? mgePhysOuterR + 20 : 0,
+    mgeLabelOuterR,
+    CHR_R + 20,
+  )
 
-  return ox + chrColW + PAD
+  return { chrRingR, mgeRingR, totalR }
+}
+
+/** Render one cell centred at (cx, cy). */
+function renderCell(cell: Cell, cx: number, cy: number, svg: SVGBuilder): void {
+  const { chrRingR, mgeRingR } = computeCellLayout(cell)
+  const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
+  const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
+  const nChr = chrs.length
+  const nMge = mges.length
+
+  // Chromosomes — inner ring (single chr sits at cell centre)
+  chrs.forEach((ch, i) => {
+    const angle = nChr > 1 ? -Math.PI / 2 + (2 * Math.PI * i) / nChr : 0
+    const ccx = cx + chrRingR * Math.cos(angle)
+    const ccy = cy + chrRingR * Math.sin(angle)
+    svg.circle(ccx, ccy, CHR_R, CHR_FILL, CHR_STROKE, CHR_SW)
+    renderArcs(ch.children, ccx, ccy, CHR_R, ARC_BAND_CHR, svg, -Math.PI / 2)
+    if (ch.label) svg.text(ccx, ccy + 5, ch.label, 15)
+  })
+
+  // MGEs — outer ring; arc markers face outward from the cell centre
+  mges.forEach((mge, i) => {
+    const angle = nMge > 1 ? -Math.PI / 2 + (2 * Math.PI * i) / nMge : -Math.PI / 2
+    const mx = cx + mgeRingR * Math.cos(angle)
+    const my = cy + mgeRingR * Math.sin(angle)
+    svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
+    renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg, angle)
+    if (mge.label) svg.text(mx, my + 5, mge.label, 13)
+  })
 }
 
 export function renderSVG(cellSet: CellSet): string {
   const cells = cellSet.cells
   if (!cells.length) return '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"/>'
 
-  const dims = cells.map(measureCell)
-  const totalW = dims.reduce((s, [w]) => s + w, 0) + (cells.length - 1) * PAD + PAD * 2
-  const height = Math.max(...dims.map(([, h]) => h)) + PAD * 2
+  const layouts = cells.map(computeCellLayout)
+  const totalW = layouts.reduce((s, l) => s + l.totalR * 2, 0) + (cells.length + 1) * PAD
+  const height = Math.max(...layouts.map(l => l.totalR * 2)) + PAD * 2
 
   const svg = new SVGBuilder()
   let x = PAD
   cells.forEach((cell, i) => {
-    const [w] = dims[i]
-    renderCell(cell, x, PAD, height - PAD * 2, svg)
-    x += w
+    const { totalR } = layouts[i]
+    const cx = x + totalR
+    const cy = height / 2
+    renderCell(cell, cx, cy, svg)
+    x += totalR * 2 + PAD
     if (i < cells.length - 1) {
-      svg.line(x + PAD / 2, PAD, x + PAD / 2, height - PAD, '#ccc', 1.5, '6,4')
-      x += PAD
+      svg.line(x - PAD / 2, PAD, x - PAD / 2, height - PAD, '#ccc', 1.5, '6,4')
     }
   })
 
