@@ -43,10 +43,15 @@ class SVGBuilder {
     )
   }
 
-  rectRotated(cx: number, cy: number, w: number, h: number, fill: string, deg: number): void {
+  rectRotated(
+    cx: number, cy: number, w: number, h: number,
+    fill: string, deg: number,
+    stroke = '', sw = 0,
+  ): void {
+    const strokeAttr = stroke ? ` stroke="${stroke}" stroke-width="${sw}"` : ''
     this.parts.push(
       `<rect x="${(cx - w / 2).toFixed(1)}" y="${(cy - h / 2).toFixed(1)}" ` +
-      `width="${w}" height="${h}" fill="${fill}" rx="2" ` +
+      `width="${w}" height="${h}" fill="${fill}" rx="2"${strokeAttr} ` +
       `transform="rotate(${deg.toFixed(1)},${cx.toFixed(1)},${cy.toFixed(1)})"/>`,
     )
   }
@@ -93,7 +98,25 @@ function renderNested(
     const by = py + pr * Math.sin(angle)
     const colour = elementColour(el.label, i)
     const deg = (angle * 180) / Math.PI + 90
-    svg.rectRotated(bx, by, 18, 11, colour, deg)
+
+    // Parent rect — white outline when it has children to signal containment
+    const hasChildren = el.children.length > 0
+    svg.rectRotated(bx, by, 18, 11, colour, deg, hasChildren ? 'white' : '', hasChildren ? 1.5 : 0)
+
+    // Children shown as small coloured stripes inside the parent rect.
+    // Offset along the tangential direction (angle + π/2).
+    if (hasChildren) {
+      const nc = el.children.length
+      const spacing = Math.min(5, 14 / nc)
+      el.children.forEach((child, j) => {
+        const childColour = elementColour(child.label, j)
+        const offset = (j - (nc - 1) / 2) * spacing
+        const cx = bx + offset * Math.cos(angle + Math.PI / 2)
+        const cy = by + offset * Math.sin(angle + Math.PI / 2)
+        svg.rectRotated(cx, cy, 4, 8, childColour, deg, 'white', 0.5)
+      })
+    }
+
     const lx = px + (pr + 26) * Math.cos(angle)
     const ly = py + (pr + 26) * Math.sin(angle)
     if (el.label) svg.text(lx, ly + 4, el.label, 12, 'middle', '#444')
