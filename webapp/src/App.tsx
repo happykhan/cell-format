@@ -3,6 +3,7 @@ import { NavBar, AppFooter, FileUpload } from '@genomicx/ui'
 import { parseWolvercote } from './wolvercote/parser'
 import { renderSVG } from './wolvercote/renderer'
 import { parseGenBank, parseGFF, detectFileType } from './wolvercote/genbank'
+import { InteractiveBuilder } from './components/InteractiveBuilder'
 import './App.css'
 
 declare const __APP_VERSION__: string
@@ -16,10 +17,13 @@ const EXAMPLES = [
   { label: 'With attributes', value: '()chromosome[organism="E. coli", strain="K-12"]' },
 ]
 
+type Tab = 'text' | 'builder' | 'import'
+
 export default function App() {
   const [text, setText] = useState(EXAMPLES[0].value)
   const [uploadFiles, setUploadFiles] = useState<File[]>([])
   const [uploadError, setUploadError] = useState('')
+  const [tab, setTab] = useState<Tab>('text')
 
   const parsed = parseWolvercote(text)
   const svgOutput = parsed.ok ? renderSVG(parsed.value) : null
@@ -78,48 +82,74 @@ export default function App() {
       />
 
       <main className="app-main">
-        {/* Examples */}
-        <div className="examples-bar">
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex.label}
-              className="example-btn"
-              onClick={() => setText(ex.value)}
-            >
-              {ex.label}
-            </button>
-          ))}
+        {/* Tabs */}
+        <div className="tabs">
+          <button className={`tab-btn${tab === 'text' ? ' active' : ''}`} onClick={() => setTab('text')}>
+            Text editor
+          </button>
+          <button className={`tab-btn${tab === 'builder' ? ' active' : ''}`} onClick={() => setTab('builder')}>
+            Interactive builder
+          </button>
+          <button className={`tab-btn${tab === 'import' ? ' active' : ''}`} onClick={() => setTab('import')}>
+            Import GenBank / GFF
+          </button>
         </div>
+
+        {/* Examples (shown for text tab) */}
+        {tab === 'text' && (
+          <div className="examples-bar">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex.label}
+                className="example-btn"
+                onClick={() => setText(ex.value)}
+              >
+                {ex.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* GenBank / GFF upload */}
-        <div className="upload-row">
-          <FileUpload
-            files={uploadFiles}
-            onFilesChange={handleFilesChange}
-            label="Import GenBank or GFF3"
-            accept=".gb,.gbk,.genbank,.gff,.gff3"
-            multiple={false}
-            hint="Upload a GenBank or GFF3 file to auto-generate the Wolvercote format"
-          />
-          {uploadError && <div className="validation-error">{uploadError}</div>}
-        </div>
+        {tab === 'import' && (
+          <div className="upload-row">
+            <FileUpload
+              files={uploadFiles}
+              onFilesChange={handleFilesChange}
+              label="Import GenBank or GFF3"
+              accept=".gb,.gbk,.genbank,.gff,.gff3"
+              multiple={false}
+              hint="Upload a GenBank or GFF3 file to auto-generate the Wolvercote format string"
+            />
+            {uploadError && <div className="validation-error">{uploadError}</div>}
+          </div>
+        )}
 
         <div className="editor-layout">
-          {/* Left: editor */}
+          {/* Left: editor or builder */}
           <div className="panel">
-            <div className="panel-title">Wolvercote format</div>
-            <textarea
-              className={`wolvercote-editor${!parsed.ok ? ' error' : ''}`}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              spellCheck={false}
-              placeholder="Enter Wolvercote format string, e.g. ()chr1,{}pBAD"
-            />
-            {!parsed.ok && (
-              <div className="validation-error">
-                {parsed.error.message}
-                {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
-              </div>
+            {tab === 'builder' ? (
+              <>
+                <div className="panel-title">Interactive builder</div>
+                <InteractiveBuilder onUpdate={setText} />
+              </>
+            ) : (
+              <>
+                <div className="panel-title">Wolvercote format</div>
+                <textarea
+                  className={`wolvercote-editor${!parsed.ok ? ' error' : ''}`}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  spellCheck={false}
+                  placeholder="Enter Wolvercote format string, e.g. ()chr1,{}pBAD"
+                />
+                {!parsed.ok && (
+                  <div className="validation-error">
+                    {parsed.error.message}
+                    {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
+                  </div>
+                )}
+              </>
             )}
             <div className="actions">
               <button className="gx-btn gx-btn-secondary" onClick={downloadWolv} disabled={!text}>
