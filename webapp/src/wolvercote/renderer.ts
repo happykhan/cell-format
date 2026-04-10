@@ -31,6 +31,7 @@ function elementColour(label: string, index: number): string {
   if (l.includes('integron') || l.startsWith('int')) return '#9b59b6'
   if (l.includes('phage')) return '#f39c12'
   if (l.includes('insertion') || l.startsWith('is')) return '#f39c12'
+  if (l.includes('plasmid') || l.startsWith('p')) return MGE_STROKE   // plasmids → green
   return ELEMENT_COLOURS[index % ELEMENT_COLOURS.length]
 }
 
