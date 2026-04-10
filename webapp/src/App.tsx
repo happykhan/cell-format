@@ -11,8 +11,8 @@ declare const __APP_VERSION__: string
 
 const EXAMPLES = [
   { label: 'Chr + plasmid', value: '()chr1,{}pBAD' },
-  { label: 'Chr with integron', value: '({}integron[type="integron"])my_chr' },
-  { label: 'Transposon + integron', value: '( {}transposon1[type="transposon"] )chromosome , { {}transposon2[type="transposon"], {}integron[type="integron"] }plasmid' },
+  { label: 'Chr with integron', value: '({}integron)my_chr' },
+  { label: 'Transposon + integron', value: '( {}transposon1 )chromosome , { {}transposon2, {}integron }plasmid' },
   { label: 'Two cells', value: '()chromosome1,{}plasmidA ; ()chromosome2,{}plasmidA' },
   { label: 'KPC in Tn4401 (pKpQIL)', value: '()chromosome, { { {}blaKPC-3[type="gene"] }Tn4401[type="transposon"] }pKpQIL' },
   { label: 'OXA-48 in Tn1999', value: '()chromosome, { { {}blaOXA-48[type="gene"] }Tn1999[type="transposon"] }pOXA-48a' },
