@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { NavBar, AppFooter, FileUpload } from '@genomicx/ui'
+import { FileUpload } from '@genomicx/ui'
 import { parseWolvercote } from './wolvercote/parser'
 import { renderSVG } from './wolvercote/renderer'
 import { parseGenBank, parseGFF, detectFileType } from './wolvercote/genbank'
@@ -75,12 +75,25 @@ export default function App() {
 
   return (
     <div className="app">
-      <NavBar
-        appName="Wolvercote"
-        appSubtitle="Bacterial Genome Organisation Visualiser"
-        version={__APP_VERSION__}
-        githubUrl="https://github.com/happykhan/cell-format"
-      />
+      <header className="app-header">
+        <div className="app-header-inner">
+          <div className="app-header-brand">
+            <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="11" cy="16" r="9" fill="#dde8f8" stroke="#3a6fba" strokeWidth="2.5"/>
+              <circle cx="24" cy="10" r="5" fill="#e6f5e6" stroke="#3a9943" strokeWidth="2"/>
+              <rect x="17" y="10" width="5" height="3" rx="1" fill="#e05252" transform="rotate(-30 19.5 11.5)"/>
+            </svg>
+            <div>
+              <span className="app-header-name">Wolvercote</span>
+              <span className="app-header-sub">Bacterial Genome Organisation Visualiser</span>
+            </div>
+          </div>
+          <nav className="app-header-nav">
+            <span className="app-header-version">v{__APP_VERSION__}</span>
+            <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub</a>
+          </nav>
+        </div>
+      </header>
 
       <main className="app-main">
         {/* Tabs */}
@@ -188,11 +201,12 @@ export default function App() {
         </div>
       </main>
 
-      <AppFooter
-        appName="Wolvercote"
-        bugReportUrl="https://github.com/happykhan/cell-format/issues"
-        bugReportEmail="nabil@happykhan.com"
-      />
+      <footer className="app-footer">
+        Wolvercote &mdash; bacterial genome organisation format &bull;{' '}
+        <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">
+          Report a bug
+        </a>
+      </footer>
     </div>
   )
 }

@@ -5,6 +5,65 @@
   flex-direction: column;
 }
 
+/* ── Header ──────────────────────────────────── */
+.app-header {
+  background: var(--gx-surface);
+  border-bottom: 1px solid var(--gx-border);
+  padding: 0 2rem;
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--gx-max-width);
+  margin: 0 auto;
+  height: 56px;
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.app-header-name {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--gx-text);
+  line-height: 1.2;
+}
+
+.app-header-sub {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--gx-text-muted);
+  line-height: 1.2;
+}
+
+.app-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.85rem;
+}
+
+.app-header-nav a {
+  color: var(--gx-text-muted);
+  text-decoration: none;
+}
+
+.app-header-nav a:hover {
+  color: var(--gx-accent);
+}
+
+.app-header-version {
+  color: var(--gx-text-muted);
+  font-family: var(--gx-font-mono);
+  font-size: 0.78rem;
+}
+
 /* ── Main ────────────────────────────────────── */
 .app-main {
   flex: 1;
@@ -322,4 +381,22 @@
   gap: 0.5rem;
   justify-content: flex-end;
   margin-top: 0.25rem;
+}
+
+/* ── Footer ──────────────────────────────────── */
+.app-footer {
+  padding: 1rem 2rem;
+  font-size: 0.8rem;
+  color: var(--gx-text-muted);
+  border-top: 1px solid var(--gx-border);
+  text-align: center;
+}
+
+.app-footer a {
+  color: var(--gx-accent);
+  text-decoration: none;
+}
+
+.app-footer a:hover {
+  text-decoration: underline;
 }
