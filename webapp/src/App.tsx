@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { FileUpload } from '@genomicx/ui'
 import { parseWolvercote } from './wolvercote/parser'
 import { renderSVG } from './wolvercote/renderer'
@@ -25,7 +26,6 @@ export default function App() {
   const [uploadError, setUploadError] = useState('')
   const [tab, setTab] = useState<Tab>('text')
   const [builderSyncVersion, setBuilderSyncVersion] = useState(0)
-  const [showAbout, setShowAbout] = useState(false)
 
   const parsed = parseWolvercote(text)
   const svgOutput = parsed.ok ? renderSVG(parsed.value) : null
@@ -91,7 +91,7 @@ export default function App() {
           </div>
           <nav className="app-header-nav">
             <span className="app-header-version">v{__APP_VERSION__}</span>
-            <button className="app-header-link-btn" onClick={() => setShowAbout(true)}>About</button>
+            <Link to="/about" className="app-header-link-btn">About</Link>
             <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub</a>
           </nav>
         </div>
@@ -202,62 +202,6 @@ export default function App() {
           </div>
         </div>
       </main>
-
-      {/* About modal */}
-      {showAbout && (
-        <div className="builder-modal-overlay" onClick={() => setShowAbout(false)}>
-          <div className="builder-modal about-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="about-header">
-              <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="11" cy="16" r="9" fill="#dde8f8" stroke="#3a6fba" strokeWidth="2.5"/>
-                <circle cx="24" cy="10" r="5" fill="#e6f5e6" stroke="#3a9943" strokeWidth="2"/>
-                <rect x="17" y="10" width="5" height="3" rx="1" fill="#e05252" transform="rotate(-30 19.5 11.5)"/>
-              </svg>
-              <div>
-                <div className="about-title">Wolvercote format</div>
-                <div className="about-version">v{__APP_VERSION__}</div>
-              </div>
-              <button className="builder-remove-btn" style={{ marginLeft: 'auto', fontSize: '1.4rem' }} onClick={() => setShowAbout(false)}>×</button>
-            </div>
-
-            <p className="about-desc">
-              A compact, human-readable notation for describing the organisation of bacterial genomes —
-              inspired by the Newick format for phylogenetic trees.
-            </p>
-
-            <div className="about-section">Format syntax</div>
-            <table className="about-table">
-              <tbody>
-                <tr><td><code>()label</code></td><td>Chromosome</td></tr>
-                <tr><td><code>{'{}'}{'}'}label</code></td><td>Plasmid / MGE</td></tr>
-                <tr><td><code>({}Tn3)chr</code></td><td>Tn3 on chromosome border</td></tr>
-                <tr><td><code>{'{ {}blaKPC }plas'}</code></td><td>Resistance gene inside plasmid</td></tr>
-                <tr><td><code>A , B</code></td><td>Two replicons in one cell</td></tr>
-                <tr><td><code>A ; B</code></td><td>Two separate cells</td></tr>
-                <tr><td><code>[k="v"]</code></td><td>Attribute annotation</td></tr>
-              </tbody>
-            </table>
-
-            <div className="about-section">Authors</div>
-            <p className="about-desc" style={{ marginBottom: '0.5rem' }}>
-              Centre for Genomic Pathogen Surveillance, University of Oxford
-            </p>
-            <ul className="about-authors">
-              <li>Julio Diaz Caballero</li>
-              <li>Nabil-Fareed Alikhan</li>
-              <li>Khalil AbuDahab</li>
-              <li>David Aanensen</li>
-            </ul>
-
-            <div className="about-section">Links</div>
-            <div className="about-links">
-              <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub repository</a>
-              <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">Report a bug</a>
-              <a href="https://www.pathogensurveillance.net" target="_blank" rel="noreferrer">CGPS</a>
-            </div>
-          </div>
-        </div>
-      )}
 
       <footer className="app-footer">
         Wolvercote &mdash; bacterial genome organisation format &bull;{' '}

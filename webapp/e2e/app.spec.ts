@@ -18,23 +18,20 @@ test.describe('page shell', () => {
     await expect(link).toHaveAttribute('href', /github\.com/)
   })
 
-  test('opens About modal and shows authors', async ({ page }) => {
+  test('About link navigates to /about page with authors', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: 'About' }).click()
+    await page.getByRole('link', { name: 'About' }).click()
+    await expect(page).toHaveURL('/about')
     await expect(page.getByText('Centre for Genomic Pathogen Surveillance')).toBeVisible()
     await expect(page.getByText('Nabil-Fareed Alikhan')).toBeVisible()
     await expect(page.getByText('Julio Diaz Caballero')).toBeVisible()
-    // Close it
-    await page.keyboard.press('Escape')
-    // or click overlay
   })
 
-  test('About modal closes on overlay click', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('button', { name: 'About' }).click()
-    await expect(page.getByText('Centre for Genomic Pathogen Surveillance')).toBeVisible()
-    await page.locator('.builder-modal-overlay').click({ position: { x: 5, y: 5 } })
-    await expect(page.getByText('Centre for Genomic Pathogen Surveillance')).not.toBeVisible()
+  test('About page back link returns to home', async ({ page }) => {
+    await page.goto('/about')
+    await page.getByRole('link', { name: '← Back' }).click()
+    await expect(page).toHaveURL('/')
+    await expect(page.locator('.wolvercote-editor')).toBeVisible()
   })
 })
 
