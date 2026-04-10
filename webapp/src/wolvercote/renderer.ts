@@ -20,7 +20,7 @@ const FONT = 'Inter, Arial, sans-serif'
 
 const ARC_BAND_CHR = 16   // radial thickness of the outermost arc band on chromosomes
 const ARC_BAND_MGE = 10   // radial thickness of the outermost arc band on MGE circles
-const ARC_TAPER = 0.85    // each deeper nesting level is this fraction narrower
+const ARC_TAPER = 0.90    // each deeper nesting level is this fraction narrower (10% reduction)
 const ARC_HALF = 0.28     // half-width of each depth-0 arc marker (radians ≈ 16°)
 
 const TYPE_COLOURS: Record<string, string> = {
@@ -193,15 +193,11 @@ function renderNestedArcs(
   })
 }
 
-/** Estimate SVG text width in pixels (rough but consistent). */
-function estimateLabelWidth(label: string, fontSize: number): number {
-  return fontSize * 0.6 * label.length
-}
-
 /**
- * Render top-level arc markers and fan all subtree labels around the arc centre.
- * 1 label → straight out; 2 → ±step/2; 3 → −step, 0, +step; etc.
- * Step is computed dynamically so adjacent labels never visually overlap.
+ * Render top-level arc markers and place all subtree labels without collision.
+ * 1 label → straight spoke to label ring.
+ * 2+ labels → stacked vertically on the natural side (right for top/right arcs,
+ *             left for left arcs), with diagonal spokes to each label.
  */
 function renderArcs(
   elements: MGENode[],
@@ -232,40 +228,49 @@ function renderArcs(
       renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, a0, a1, svg, 1)
     }
 
-    // Collect all labels in this element's subtree, then fan them
+    // Collect all labels in this element's subtree
     const specs = collectSubtreeLabels(el, innerR, bandW, a0, a1, 11)
     if (!specs.length) return
 
-    // Sort by descending outerR: arc closest to label ring fans toward centre,
-    // keeping spokes from crossing each other.
-    specs.sort((a, b) => b.outerR - a.outerR)
+    // Sort outermost arc first (shallowest nesting = smallest outerR)
+    specs.sort((a, b) => a.outerR - b.outerR)
 
     const nl = specs.length
-    // Compute step: wide enough that adjacent label texts don't overlap
-    const step = nl > 1
-      ? Math.max(...specs.map((s, j) => {
-          if (j === 0) return 0
-          const prev = specs[j - 1]
-          const needed = (estimateLabelWidth(prev.label, prev.fontSize) +
-                          estimateLabelWidth(s.label, s.fontSize)) / 2 / labelRing + 0.06
-          return needed
-        }))
-      : 0
+    const LINE_H = 15
 
-    specs.forEach((spec, j) => {
-      const spread = nl > 1 ? (j - (nl - 1) / 2) * step : 0
-      const labelAngle = center + spread
+    if (nl === 1) {
+      // Single label: straight spoke radially outward
+      const spec = specs[0]
       svg.line(
         cx + spec.outerR * Math.cos(spec.arcMid),
         cy + spec.outerR * Math.sin(spec.arcMid),
-        cx + labelRing * Math.cos(labelAngle),
-        cy + labelRing * Math.sin(labelAngle),
+        cx + labelRing * Math.cos(center),
+        cy + labelRing * Math.sin(center),
         '#bbb', 0.7,
       )
-      const lx = cx + (labelRing + 5) * Math.cos(labelAngle)
-      const ly = cy + (labelRing + 5) * Math.sin(labelAngle) + 4
-      svg.text(lx, ly, spec.label, spec.fontSize, arcAnchor(labelAngle), '#444')
-    })
+      const lx = cx + (labelRing + 5) * Math.cos(center)
+      const ly = cy + (labelRing + 5) * Math.sin(center) + 4
+      svg.text(lx, ly, spec.label, spec.fontSize, arcAnchor(center), '#444')
+    } else {
+      // Multiple labels: stack vertically on the natural side
+      // (right for top/right arcs, left for left arcs)
+      const goRight = Math.cos(center) >= -0.3
+      const stackX = cx + (goRight ? 1 : -1) * (labelRing + 5)
+      const stackCenterY = cy + labelRing * Math.sin(center)
+      const anchor = goRight ? 'start' : 'end'
+      const textX = stackX + (goRight ? 3 : -3)
+
+      specs.forEach((spec, j) => {
+        const ry = stackCenterY + (j - (nl - 1) / 2) * LINE_H
+        svg.line(
+          cx + spec.outerR * Math.cos(spec.arcMid),
+          cy + spec.outerR * Math.sin(spec.arcMid),
+          stackX, ry,
+          '#bbb', 0.7,
+        )
+        svg.text(textX, ry + 4, spec.label, spec.fontSize, anchor, '#444')
+      })
+    }
   })
 }
 
