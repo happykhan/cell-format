@@ -22,7 +22,7 @@ const FONT = 'Inter, Arial, sans-serif'
 
 const ARC_BAND_CHR = 18   // radial thickness per nesting level on chromosomes
 const ARC_BAND_MGE = 10   // radial thickness per nesting level on MGE circles
-const ARC_GAP = 0.06      // angular gap between siblings (radians)
+const ARC_HALF = 0.28     // half-width of each depth-0 arc marker (radians ≈ 16°)
 
 function elementColour(label: string, index: number): string {
   const l = label.toLowerCase()
@@ -104,45 +104,69 @@ class SVGBuilder {
 }
 
 /**
- * Render MGE elements as concentric arc sectors on a circle.
- * Each element at depth=0 gets an equal angular slice of the full circle.
- * Children recursively subdivide their parent's angular slice, one band inward.
- * Depth=0 element labels are placed outside the circle at the arc midpoint.
+ * Render elements inside a nested angular range [a0..a1] as arc bands.
+ * Children subdivide the parent range; each level goes one band inward.
  */
-function renderArcs(
+function renderNestedArcs(
   elements: MGENode[],
   cx: number, cy: number,
   outerR: number, bandW: number,
-  startAngle: number, totalSpan: number,
+  a0: number, a1: number,
   svg: SVGBuilder,
   depth: number,
 ): void {
   const n = elements.length
   if (!n || outerR - bandW < 4) return
-
   const innerR = outerR - bandW
-  const totalGap = ARC_GAP * n
-  const available = Math.max(0, totalSpan - totalGap)
-  const arcSpan = available / n
-  if (arcSpan < 0.02) return
+  const span = a1 - a0
+  const gap = 0.025
+  const arcSpan = Math.max(0.01, (span - gap * n) / n)
 
   elements.forEach((el, i) => {
-    const a0 = startAngle + i * (arcSpan + ARC_GAP)
-    const a1 = a0 + arcSpan
+    const ea0 = a0 + i * (arcSpan + gap)
+    const ea1 = ea0 + arcSpan
     const colour = elementColour(el.label, i + depth * 7)
+    svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
+    if (el.children.length) {
+      renderNestedArcs(el.children, cx, cy, innerR, bandW, ea0, ea1, svg, depth + 1)
+    }
+  })
+}
+
+/**
+ * Render top-level elements as fixed-width arc markers evenly distributed around
+ * the circle, then recurse into children with renderNestedArcs.
+ * Labels are placed outside the circle at each arc's position.
+ */
+function renderArcs(
+  elements: MGENode[],
+  cx: number, cy: number,
+  outerR: number, bandW: number,
+  svg: SVGBuilder,
+): void {
+  const n = elements.length
+  if (!n || outerR - bandW < 4) return
+  const innerR = outerR - bandW
+
+  // Cap half-span so arcs don't overlap when there are many elements
+  const halfSpan = Math.min(ARC_HALF, Math.PI / n - 0.04)
+
+  elements.forEach((el, i) => {
+    const center = -Math.PI / 2 + (2 * Math.PI * i) / n
+    const a0 = center - halfSpan
+    const a1 = center + halfSpan
+    const colour = elementColour(el.label, i)
 
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
-    // Labels only for outermost elements, placed outside the circle
-    if (depth === 0 && el.label) {
-      const mid = (a0 + a1) / 2
-      const lx = cx + (outerR + 16) * Math.cos(mid)
-      const ly = cy + (outerR + 16) * Math.sin(mid)
+    if (el.label) {
+      const lx = cx + (outerR + 16) * Math.cos(center)
+      const ly = cy + (outerR + 16) * Math.sin(center)
       svg.text(lx, ly + 4, el.label, 11, 'middle', '#444')
     }
 
     if (el.children.length) {
-      renderArcs(el.children, cx, cy, innerR, bandW, a0, arcSpan, svg, depth + 1)
+      renderNestedArcs(el.children, cx, cy, innerR, bandW, a0, a1, svg, 1)
     }
   })
 }
@@ -175,7 +199,7 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
       const cx = ox + CHR_R + PAD + 20   // shift right to give room for left-side arc labels
       const cy = startY + i * (CHR_R * 2 + PAD) + CHR_R
       svg.circle(cx, cy, CHR_R, CHR_FILL, CHR_STROKE, CHR_SW)
-      renderArcs(ch.children, cx, cy, CHR_R, ARC_BAND_CHR, -Math.PI / 2, 2 * Math.PI, svg, 0)
+      renderArcs(ch.children, cx, cy, CHR_R, ARC_BAND_CHR, svg)
       if (ch.label) svg.text(cx, cy + 5 + (ch.children.length ? 0 : CHR_R * 0.4), ch.label, 15)
     })
   }
@@ -190,7 +214,7 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
       const mx = mgeColX + MGE_R + PAD
       const my = startMY + i * (MGE_R * 2 + PAD + 30) + MGE_R
       svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
-      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, -Math.PI / 2, 2 * Math.PI, svg, 0)
+      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg)
       if (mge.label) svg.text(mx, my - MGE_R - 10, mge.label, 13)
     })
     return mgeColX + MGE_R * 2 + PAD * 2 + 50
