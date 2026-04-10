@@ -20,8 +20,9 @@ const MGE_R = 44
 const PAD = 24
 const FONT = 'Inter, Arial, sans-serif'
 
-const ARC_BAND_CHR = 11   // radial thickness per nesting level on chromosomes
-const ARC_BAND_MGE = 7    // radial thickness per nesting level on MGE circles
+const ARC_BAND_CHR = 16   // radial thickness of the outermost arc band on chromosomes
+const ARC_BAND_MGE = 10   // radial thickness of the outermost arc band on MGE circles
+const ARC_TAPER = 0.85    // each deeper nesting level is this fraction narrower
 const ARC_HALF = 0.28     // half-width of each depth-0 arc marker (radians ≈ 16°)
 
 function elementColour(label: string, index: number): string {
@@ -103,9 +104,17 @@ class SVGBuilder {
   }
 }
 
+/** Pick SVG text-anchor so labels spread away from their arc position naturally. */
+function arcAnchor(angle: number): string {
+  const c = Math.cos(angle)
+  if (c > 0.3) return 'start'
+  if (c < -0.3) return 'end'
+  return 'middle'
+}
+
 /**
  * Render child elements within a parent arc range [a0..a1], radiating outward.
- * Each nesting level adds one band further out from the circle.
+ * Band width tapers by ARC_TAPER per depth. Labels shown when arc is wide enough.
  */
 function renderNestedArcs(
   elements: MGENode[],
@@ -116,7 +125,7 @@ function renderNestedArcs(
   depth: number,
 ): void {
   const n = elements.length
-  if (!n) return
+  if (!n || bandW < 3) return
   const outerR = innerR + bandW
   const span = a1 - a0
   const gap = 0.025
@@ -125,24 +134,26 @@ function renderNestedArcs(
   elements.forEach((el, i) => {
     const ea0 = a0 + i * (arcSpan + gap)
     const ea1 = ea0 + arcSpan
+    const mid = (ea0 + ea1) / 2
     const colour = elementColour(el.label, i + depth * 7)
     svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
+
+    if (el.label && arcSpan > 0.18) {
+      const labelR = outerR + 10
+      const lx = cx + labelR * Math.cos(mid)
+      const ly = cy + labelR * Math.sin(mid) + 4
+      svg.text(lx, ly, el.label, 10, arcAnchor(mid), '#555')
+    }
+
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, outerR, bandW, ea0, ea1, svg, depth + 1)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, ea0, ea1, svg, depth + 1)
     }
   })
 }
 
 /**
  * Render top-level elements as fixed-width arc markers sitting on the circle
- * edge (innerR = baseR), radiating outward. Children use renderNestedArcs to
- * add further outward bands within the parent's angular slice.
- * Labels alternate between two offsets to reduce collisions.
- */
-/**
- * startAngle: angle of the first element's centre.
- * Use -π/2 (top) for chromosomes, 0 (right) for MGE circles so element 0
- * never lands directly on the MGE main label which is placed above the circle.
+ * edge, radiating outward. Labels use angle-based text-anchor.
  */
 function renderArcs(
   elements: MGENode[],
@@ -155,8 +166,6 @@ function renderArcs(
   if (!n) return
   const innerR = baseR
   const outerR = baseR + bandW
-
-  // Cap half-span so adjacent markers don't overlap for large n
   const halfSpan = Math.min(ARC_HALF, Math.PI / n - 0.04)
 
   elements.forEach((el, i) => {
@@ -168,15 +177,15 @@ function renderArcs(
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
     if (el.label) {
-      // Alternate label radius to reduce collision between adjacent elements
-      const labelR = outerR + 8 + (i % 2) * 10
+      // Alternate label distance to separate adjacent elements vertically
+      const labelR = outerR + 10 + (i % 2) * 12
       const lx = cx + labelR * Math.cos(center)
-      const ly = cy + labelR * Math.sin(center)
-      svg.text(lx, ly + 4, el.label, 11, 'middle', '#444')
+      const ly = cy + labelR * Math.sin(center) + 4
+      svg.text(lx, ly, el.label, 11, arcAnchor(center), '#444')
     }
 
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, outerR, bandW, a0, a1, svg, 1)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, a0, a1, svg, 1)
     }
   })
 }
