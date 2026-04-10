@@ -139,11 +139,17 @@ function renderNestedArcs(
  * add further outward bands within the parent's angular slice.
  * Labels alternate between two offsets to reduce collisions.
  */
+/**
+ * startAngle: angle of the first element's centre.
+ * Use -π/2 (top) for chromosomes, 0 (right) for MGE circles so element 0
+ * never lands directly on the MGE main label which is placed above the circle.
+ */
 function renderArcs(
   elements: MGENode[],
   cx: number, cy: number,
   baseR: number, bandW: number,
   svg: SVGBuilder,
+  startAngle = -Math.PI / 2,
 ): void {
   const n = elements.length
   if (!n) return
@@ -154,7 +160,7 @@ function renderArcs(
   const halfSpan = Math.min(ARC_HALF, Math.PI / n - 0.04)
 
   elements.forEach((el, i) => {
-    const center = -Math.PI / 2 + (2 * Math.PI * i) / n
+    const center = startAngle + (2 * Math.PI * i) / n
     const a0 = center - halfSpan
     const a1 = center + halfSpan
     const colour = elementColour(el.label, i)
@@ -218,8 +224,11 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
       const mx = mgeColX + MGE_R + PAD
       const my = startMY + i * (MGE_R * 2 + PAD + 30) + MGE_R
       svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
-      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg)
-      if (mge.label) svg.text(mx, my - MGE_R - 10, mge.label, 13)
+      // Start MGE child arcs at 0 (right) to avoid clashing with the label above
+      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg, 0)
+      // Raise label above the arc band when children are present
+      const labelY = mge.children.length ? my - MGE_R - ARC_BAND_MGE - 14 : my - MGE_R - 10
+      if (mge.label) svg.text(mx, labelY, mge.label, 13)
     })
     return mgeColX + MGE_R * 2 + PAD * 2 + 50
   }
