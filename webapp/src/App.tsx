@@ -18,7 +18,7 @@ const EXAMPLES = [
   { label: 'OXA-48 in Tn1999', value: '()chromosome, { { {}blaOXA-48[type="gene"] }Tn1999 }pOXA-48a' },
   { label: 'CTX-M on ISEcp1', value: '()chromosome, { { {}blaCTX-M-15[type="gene"] }ISEcp1 }pCTX-M-3' },
   { label: 'Kp CAV1193 (real)', value: '()CAV1193, {}pCAV1193-166, {}pCAV1193-258, {}pCAV1193-78, { { {}blaKPC-3[type="gene"] }Tn4401 }pKPC_CAV1193' },
-  { label: 'With attributes', value: '()chromosome[organism="E. coli", strain="K-12"]' },
+  { label: 'With attributes', value: '()chromosome, { {}blaKPC[type="gene"], {}ISEcp1[type="insertion_sequence"], {}intI[type="integron"] }pResistance' },
 ]
 
 export default function App() {
