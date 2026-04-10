@@ -24,6 +24,7 @@ export default function App() {
   const [uploadFiles, setUploadFiles] = useState<File[]>([])
   const [uploadError, setUploadError] = useState('')
   const [tab, setTab] = useState<Tab>('text')
+  const [builderSyncVersion, setBuilderSyncVersion] = useState(0)
 
   const parsed = parseWolvercote(text)
   const svgOutput = parsed.ok ? renderSVG(parsed.value) : null
@@ -87,7 +88,13 @@ export default function App() {
           <button className={`tab-btn${tab === 'text' ? ' active' : ''}`} onClick={() => setTab('text')}>
             Text editor
           </button>
-          <button className={`tab-btn${tab === 'builder' ? ' active' : ''}`} onClick={() => setTab('builder')}>
+          <button
+            className={`tab-btn${tab === 'builder' ? ' active' : ''}`}
+            onClick={() => {
+              if (tab !== 'builder' && parsed.ok) setBuilderSyncVersion((v) => v + 1)
+              setTab('builder')
+            }}
+          >
             Interactive builder
           </button>
           <button className={`tab-btn${tab === 'import' ? ' active' : ''}`} onClick={() => setTab('import')}>
@@ -131,7 +138,11 @@ export default function App() {
             {tab === 'builder' ? (
               <>
                 <div className="panel-title">Interactive builder</div>
-                <InteractiveBuilder onUpdate={setText} />
+                <InteractiveBuilder
+                onUpdate={setText}
+                syncFrom={parsed.ok ? parsed.value : null}
+                syncVersion={builderSyncVersion}
+              />
               </>
             ) : (
               <>

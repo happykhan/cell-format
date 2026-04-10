@@ -3,7 +3,8 @@
  * Produces a Wolvercote format string from UI interactions.
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import type { CellSet, ChromosomeNode, MGENode } from '../wolvercote/types'
 
 type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage'
 
@@ -67,12 +68,48 @@ function stateToWolvercote(state: BuilderState): string {
     .join(' ; ')
 }
 
-interface Props {
-  onUpdate: (wolvercote: string) => void
+function mgeTypeFromLabel(label: string): ElementType {
+  const l = label.toLowerCase()
+  if (l.includes('transposon') || /^tn\d/.test(l)) return 'transposon'
+  if (l.includes('integron') || /^int\d/.test(l)) return 'integron'
+  if (l.includes('insertion') || /^is\d/.test(l)) return 'insertion_sequence'
+  if (l.includes('phage')) return 'phage'
+  return 'plasmid'
 }
 
-export function InteractiveBuilder({ onUpdate }: Props) {
+function cellSetToBuilderState(cs: CellSet): BuilderState {
+  return {
+    cells: cs.cells.map((cell) => ({
+      chromosomes: cell.replicons
+        .filter((r): r is ChromosomeNode => r.kind === 'chromosome')
+        .map((ch) => ({
+          label: ch.label,
+          mges: ch.children.map((m) => ({ type: mgeTypeFromLabel(m.label), label: m.label })),
+        })),
+      mges: cell.replicons
+        .filter((r): r is MGENode => r.kind === 'mge')
+        .map((m) => ({
+          type: mgeTypeFromLabel(m.label),
+          label: m.label,
+          mges: m.children.map((c) => ({ type: mgeTypeFromLabel(c.label), label: c.label })),
+        })),
+    })),
+  }
+}
+
+interface Props {
+  onUpdate: (wolvercote: string) => void
+  syncFrom?: CellSet | null
+  syncVersion?: number
+}
+
+export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   const [state, setState] = useState<BuilderState>({ cells: [{ chromosomes: [], mges: [] }] })
+
+  useEffect(() => {
+    if (!syncFrom) return
+    setState(cellSetToBuilderState(syncFrom))
+  }, [syncVersion]) // eslint-disable-line react-hooks/exhaustive-deps
   const [modal, setModal] = useState<{
     show: boolean
     cellIdx: number
