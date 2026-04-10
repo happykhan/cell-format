@@ -125,9 +125,40 @@ function arcAnchor(angle: number): string {
   return 'middle'
 }
 
+/** Total outward extent of arc bands for a subtree at a given initial band width. */
+function totalBandExtent(elements: MGENode[], bandW: number): number {
+  if (!elements.length || bandW < 3) return 0
+  const childExtent = Math.max(0, ...elements.map(el =>
+    el.children.length ? totalBandExtent(el.children, bandW * ARC_TAPER) : 0
+  ))
+  return bandW + childExtent
+}
+
+/** Draw arc band and spoke+label to a shared label ring — no radial stacking. */
+function placeArcLabel(
+  el: MGENode,
+  cx: number, cy: number,
+  outerR: number,
+  mid: number,
+  labelRing: number,
+  svg: SVGBuilder,
+  fontSize: number,
+): void {
+  if (!el.label) return
+  // Spoke from arc edge to label ring
+  svg.line(
+    cx + outerR * Math.cos(mid), cy + outerR * Math.sin(mid),
+    cx + labelRing * Math.cos(mid), cy + labelRing * Math.sin(mid),
+    '#bbb', 0.7,
+  )
+  const lx = cx + (labelRing + 5) * Math.cos(mid)
+  const ly = cy + (labelRing + 5) * Math.sin(mid) + 4
+  svg.text(lx, ly, el.label, fontSize, arcAnchor(mid), '#444')
+}
+
 /**
  * Render child elements within a parent arc range [a0..a1], radiating outward.
- * Band width tapers by ARC_TAPER per depth. Labels shown when arc is wide enough.
+ * All labels placed at a shared labelRing (pre-computed by renderArcs).
  */
 function renderNestedArcs(
   elements: MGENode[],
@@ -136,6 +167,7 @@ function renderNestedArcs(
   a0: number, a1: number,
   svg: SVGBuilder,
   depth: number,
+  labelRing: number,
 ): void {
   const n = elements.length
   if (!n || bandW < 3) return
@@ -152,22 +184,18 @@ function renderNestedArcs(
     svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
 
     if (el.label && arcSpan > 0.18) {
-      // Push labels further out per depth level so radially-stacked labels don't collide
-      const labelR = outerR + 10 + depth * 24
-      const lx = cx + labelR * Math.cos(mid)
-      const ly = cy + labelR * Math.sin(mid) + 4
-      svg.text(lx, ly, el.label, 10, arcAnchor(mid), '#555')
+      placeArcLabel(el, cx, cy, outerR, mid, labelRing, svg, 10)
     }
 
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, ea0, ea1, svg, depth + 1)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, ea0, ea1, svg, depth + 1, labelRing)
     }
   })
 }
 
 /**
- * Render top-level elements as fixed-width arc markers sitting on the circle
- * edge, radiating outward. Labels use angle-based text-anchor.
+ * Render top-level elements as fixed-width arc markers on the circle edge.
+ * Computes a shared label ring for all depths so no labels touch arcs or each other.
  */
 function renderArcs(
   elements: MGENode[],
@@ -182,6 +210,12 @@ function renderArcs(
   const outerR = baseR + bandW
   const halfSpan = Math.min(ARC_HALF, Math.PI / n - 0.04)
 
+  // Compute label ring: outside the deepest possible arc band + clearance
+  const maxChildExtent = Math.max(0, ...elements.map(el =>
+    el.children.length ? totalBandExtent(el.children, bandW * ARC_TAPER) : 0
+  ))
+  const labelRing = outerR + maxChildExtent + 14
+
   elements.forEach((el, i) => {
     const center = startAngle + (2 * Math.PI * i) / n
     const a0 = center - halfSpan
@@ -191,15 +225,11 @@ function renderArcs(
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
     if (el.label) {
-      // Alternate label distance to separate adjacent elements vertically
-      const labelR = outerR + 10 + (i % 2) * 12
-      const lx = cx + labelR * Math.cos(center)
-      const ly = cy + labelR * Math.sin(center) + 4
-      svg.text(lx, ly, el.label, 11, arcAnchor(center), '#444')
+      placeArcLabel(el, cx, cy, outerR, center, labelRing, svg, 11)
     }
 
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, a0, a1, svg, 1)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, a0, a1, svg, 1, labelRing)
     }
   })
 }
@@ -208,8 +238,22 @@ function measureCell(cell: Cell): [number, number] {
   const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
   const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
 
-  const chrColW = CHR_R * 2 + PAD * 2 + 80   // +80 for outward arc bands + labels
-  const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + 90 : 0  // +90 for nested arc bands + labels
+  // Compute max label ring extent across all chromosomes and MGEs
+  const chrLabelExt = chrs.reduce((mx, ch) => {
+    const ext = ch.children.length
+      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 50
+      : 0
+    return Math.max(mx, ext)
+  }, 60)
+  const mgeLabelExt = mges.reduce((mx, mge) => {
+    const ext = mge.children.length
+      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 50
+      : 0
+    return Math.max(mx, ext)
+  }, 50)
+
+  const chrColW = CHR_R * 2 + PAD * 2 + chrLabelExt
+  const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + mgeLabelExt : 0
   const width = chrColW + mgeColW + PAD
 
   const chrColH = Math.max(chrs.length, 1) * (CHR_R * 2 + PAD + 160) + PAD + 30
