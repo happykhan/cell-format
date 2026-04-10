@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "wolvercote"
+version = "0.1.0"
+description = "Parser, validator, and SVG renderer for the Wolvercote bacterial genome organisation format"
+readme = "../README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Julio Diaz Caballero"},
+    {name = "Nabil-Fareed Alikhan", email = "nabil@happykhan.com"},
+    {name = "Khalil AbuDahab"},
+    {name = "David Aanensen"},
+]
+keywords = ["bioinformatics", "genomics", "bacteria", "plasmid", "mobile genetic elements"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+genbank = ["biopython>=1.80"]
+
+[project.scripts]
+wolvercote = "wolvercote.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/happykhan/cell-format"
+Repository = "https://github.com/happykhan/cell-format"
+Issues = "https://github.com/happykhan/cell-format/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["wolvercote*"]
