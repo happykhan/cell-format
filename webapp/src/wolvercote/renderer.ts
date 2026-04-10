@@ -118,12 +118,6 @@ function arcAnchor(angle: number): string {
   return 'middle'
 }
 
-/** Maximum nesting depth of a subtree (0 = leaf). */
-function subtreeDepth(el: MGENode): number {
-  if (!el.children.length) return 0
-  return 1 + Math.max(...el.children.map(subtreeDepth))
-}
-
 /** Total outward extent of arc bands for a subtree at a given initial band width. */
 function totalBandExtent(elements: MGENode[], bandW: number): number {
   if (!elements.length || bandW < 3) return 0
@@ -133,32 +127,46 @@ function totalBandExtent(elements: MGENode[], bandW: number): number {
   return bandW + childExtent
 }
 
-/** Draw arc band and spoke+label to a shared label ring — no radial stacking. */
-function placeArcLabel(
-  el: MGENode,
-  cx: number, cy: number,
-  outerR: number,
-  mid: number,
-  labelRing: number,
-  svg: SVGBuilder,
-  fontSize: number,
-): void {
-  if (!el.label) return
-  // Spoke from arc edge to label ring
-  svg.line(
-    cx + outerR * Math.cos(mid), cy + outerR * Math.sin(mid),
-    cx + labelRing * Math.cos(mid), cy + labelRing * Math.sin(mid),
-    '#bbb', 0.7,
-  )
-  const lx = cx + (labelRing + 5) * Math.cos(mid)
-  const ly = cy + (labelRing + 5) * Math.sin(mid) + 4
-  svg.text(lx, ly, el.label, fontSize, arcAnchor(mid), '#444')
+interface LabelSpec {
+  label: string
+  outerR: number   // arc edge where the spoke starts
+  arcMid: number   // actual arc midpoint angle
+  fontSize: number
 }
 
 /**
- * Render child elements within a parent arc range [a0..a1], radiating outward.
- * All labels placed at a shared labelRing (pre-computed by renderArcs).
+ * Recursively collect all labelled elements in a subtree with their arc geometry.
+ * arcInnerR / bandW / a0..a1 describe el's own arc.
  */
+function collectSubtreeLabels(
+  el: MGENode,
+  arcInnerR: number,
+  bandW: number,
+  a0: number,
+  a1: number,
+  fontSize: number,
+): LabelSpec[] {
+  if (bandW < 3) return []
+  const outerR = arcInnerR + bandW
+  const mid = (a0 + a1) / 2
+  const items: LabelSpec[] = el.label ? [{ label: el.label, outerR, arcMid: mid, fontSize }] : []
+
+  const childBandW = bandW * ARC_TAPER
+  const nc = el.children.length
+  if (nc && childBandW >= 3) {
+    const span = a1 - a0
+    const gap = 0.025
+    const arcSpan = Math.max(0.01, (span - gap * nc) / nc)
+    el.children.forEach((child, i) => {
+      const ea0 = a0 + i * (arcSpan + gap)
+      const ea1 = ea0 + arcSpan
+      items.push(...collectSubtreeLabels(child, outerR, childBandW, ea0, ea1, Math.max(9, fontSize - 1)))
+    })
+  }
+  return items
+}
+
+/** Draw arcs for child elements — labels are handled by the fan in renderArcs. */
 function renderNestedArcs(
   elements: MGENode[],
   cx: number, cy: number,
@@ -166,7 +174,6 @@ function renderNestedArcs(
   a0: number, a1: number,
   svg: SVGBuilder,
   depth: number,
-  labelRing: number,
 ): void {
   const n = elements.length
   if (!n || bandW < 3) return
@@ -178,26 +185,19 @@ function renderNestedArcs(
   elements.forEach((el, i) => {
     const ea0 = a0 + i * (arcSpan + gap)
     const ea1 = ea0 + arcSpan
-    const mid = (ea0 + ea1) / 2
     const colour = elementColour(el.label, i + depth * 7, el.attributes.colour, el.attributes.type)
     svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
-
-    if (el.label && arcSpan > 0.18) {
-      // Push container labels out by 18px per nesting level so they don't
-      // overlap child labels at the same angle
-      const thisRing = labelRing + subtreeDepth(el) * 18
-      placeArcLabel(el, cx, cy, outerR, mid, thisRing, svg, 10)
-    }
-
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, ea0, ea1, svg, depth + 1, labelRing)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, ea0, ea1, svg, depth + 1)
     }
   })
 }
 
+const LABEL_STEP = 0.22  // radians between adjacent fanned labels (≈12.6°)
+
 /**
- * Render top-level elements as fixed-width arc markers on the circle edge.
- * Computes a shared label ring for all depths so no labels touch arcs or each other.
+ * Render top-level arc markers and fan all subtree labels around the arc centre.
+ * 1 label → straight out; 2 → ±step/2; 3 → −step, 0, +step; etc.
  */
 function renderArcs(
   elements: MGENode[],
@@ -212,7 +212,6 @@ function renderArcs(
   const outerR = baseR + bandW
   const halfSpan = Math.min(ARC_HALF, Math.PI / n - 0.04)
 
-  // Compute label ring: outside the deepest possible arc band + clearance
   const maxChildExtent = Math.max(0, ...elements.map(el =>
     el.children.length ? totalBandExtent(el.children, bandW * ARC_TAPER) : 0
   ))
@@ -225,15 +224,33 @@ function renderArcs(
     const colour = elementColour(el.label, i, el.attributes.colour, el.attributes.type)
 
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
-
-    if (el.label) {
-      const thisRing = labelRing + subtreeDepth(el) * 18
-      placeArcLabel(el, cx, cy, outerR, center, thisRing, svg, 11)
-    }
-
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, a0, a1, svg, 1, labelRing)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW * ARC_TAPER, a0, a1, svg, 1)
     }
+
+    // Collect all labels in this element's subtree, then fan them
+    const specs = collectSubtreeLabels(el, innerR, bandW, a0, a1, 11)
+    if (!specs.length) return
+
+    // Sort by descending outerR: arc closest to label ring fans toward centre,
+    // keeping spokes from crossing each other.
+    specs.sort((a, b) => b.outerR - a.outerR)
+
+    const nl = specs.length
+    specs.forEach((spec, j) => {
+      const spread = nl > 1 ? (j - (nl - 1) / 2) * LABEL_STEP : 0
+      const labelAngle = center + spread
+      svg.line(
+        cx + spec.outerR * Math.cos(spec.arcMid),
+        cy + spec.outerR * Math.sin(spec.arcMid),
+        cx + labelRing * Math.cos(labelAngle),
+        cy + labelRing * Math.sin(labelAngle),
+        '#bbb', 0.7,
+      )
+      const lx = cx + (labelRing + 5) * Math.cos(labelAngle)
+      const ly = cy + (labelRing + 5) * Math.sin(labelAngle) + 4
+      svg.text(lx, ly, spec.label, spec.fontSize, arcAnchor(labelAngle), '#444')
+    })
   })
 }
 
@@ -243,16 +260,14 @@ function measureCell(cell: Cell): [number, number] {
 
   // Compute max label ring extent across all chromosomes and MGEs
   const chrLabelExt = chrs.reduce((mx, ch) => {
-    const maxDepth = ch.children.length ? Math.max(...ch.children.map(subtreeDepth)) + 1 : 0
     const ext = ch.children.length
-      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 80 + maxDepth * 18
+      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 100
       : 0
     return Math.max(mx, ext)
   }, 60)
   const mgeLabelExt = mges.reduce((mx, mge) => {
-    const maxDepth = mge.children.length ? Math.max(...mge.children.map(subtreeDepth)) + 1 : 0
     const ext = mge.children.length
-      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 80 + maxDepth * 18
+      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 100
       : 0
     return Math.max(mx, ext)
   }, 50)
