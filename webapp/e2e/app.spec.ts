@@ -92,7 +92,7 @@ test.describe('interactive builder', () => {
     await page.locator('.wolvercote-editor').fill('')
     await page.getByRole('button', { name: '+ Add element' }).click()
     await page.locator('.builder-modal-select').selectOption('chromosome')
-    await page.locator('.builder-modal-input').fill('myChromosome')
+    await page.locator('.builder-modal-input').first().fill('myChromosome')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     const val = await page.locator('.wolvercote-editor').inputValue()
     expect(val).toContain('myChromosome')
@@ -103,7 +103,7 @@ test.describe('interactive builder', () => {
     await page.locator('.wolvercote-editor').fill('')
     await page.getByRole('button', { name: '+ Add element' }).click()
     await page.locator('.builder-modal-select').selectOption('plasmid')
-    await page.locator('.builder-modal-input').fill('pBAD')
+    await page.locator('.builder-modal-input').first().fill('pBAD')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await expect(page.getByRole('button', { name: /Add inside pBAD/ })).toBeVisible()
   })
@@ -113,11 +113,11 @@ test.describe('interactive builder', () => {
     await page.locator('.wolvercote-editor').fill('')
     await page.getByRole('button', { name: '+ Add element' }).click()
     await page.locator('.builder-modal-select').selectOption('plasmid')
-    await page.locator('.builder-modal-input').fill('pKpQIL')
+    await page.locator('.builder-modal-input').first().fill('pKpQIL')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await page.getByRole('button', { name: /Add inside pKpQIL/ }).click()
     await page.locator('.builder-modal-select').selectOption('transposon')
-    await page.locator('.builder-modal-input').fill('Tn4401')
+    await page.locator('.builder-modal-input').first().fill('Tn4401')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
     await expect(page.locator('.builder-label-btn').filter({ hasText: 'Tn4401' })).toBeVisible()
     const val = await page.locator('.wolvercote-editor').inputValue()
@@ -137,14 +137,14 @@ test.describe('interactive builder', () => {
     await page.locator('.wolvercote-editor').fill('()myChromosome')
     await page.locator('.builder-label-btn').filter({ hasText: 'myChromosome' }).click()
     await expect(page.getByText('Edit element')).toBeVisible()
-    await expect(page.locator('.builder-modal-input')).toHaveValue('myChromosome')
+    await expect(page.locator('.builder-modal-input').first()).toHaveValue('myChromosome')
   })
 
   test('editing a label updates the format string', async ({ page }) => {
     await page.goto('/')
     await page.locator('.wolvercote-editor').fill('()oldName')
     await page.locator('.builder-label-btn').filter({ hasText: 'oldName' }).click()
-    await page.locator('.builder-modal-input').fill('newName')
+    await page.locator('.builder-modal-input').first().fill('newName')
     await page.getByRole('button', { name: 'Save' }).click()
     const val = await page.locator('.wolvercote-editor').inputValue()
     expect(val).toContain('newName')
@@ -158,10 +158,101 @@ test.describe('interactive builder', () => {
   })
 })
 
-test.describe('import tab', () => {
-  test('import tab shows file upload widget', async ({ page }) => {
+test.describe('import section', () => {
+  test('import toggle shows file upload widget', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: 'Import GenBank / GFF' }).click()
+    await page.getByRole('button', { name: '+ Import GenBank / GFF' }).click()
     await expect(page.locator('.upload-row')).toBeVisible()
+  })
+
+  test('import toggle hides the upload widget when clicked again', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '+ Import GenBank / GFF' }).click()
+    await expect(page.locator('.upload-row')).toBeVisible()
+    await page.getByRole('button', { name: 'Hide import' }).click()
+    await expect(page.locator('.upload-row')).not.toBeVisible()
+  })
+})
+
+test.describe('Klebsiella examples', () => {
+  test('KPC in Tn4401 example renders nested arcs', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'KPC in Tn4401 (pKpQIL)' }).click()
+    const val = await page.locator('.wolvercote-editor').inputValue()
+    expect(val).toContain('blaKPC-3')
+    expect(val).toContain('Tn4401')
+    expect(val).toContain('pKpQIL')
+    await expect(page.locator('.svg-viewer svg')).toBeVisible()
+    await expect(page.locator('.validation-error')).not.toBeVisible()
+  })
+
+  test('OXA-48 example loads and renders', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'OXA-48 in Tn1999' }).click()
+    const val = await page.locator('.wolvercote-editor').inputValue()
+    expect(val).toContain('blaOXA-48')
+    expect(val).toContain('Tn1999')
+    await expect(page.locator('.validation-error')).not.toBeVisible()
+  })
+
+  test('CAV1193 real genome example has multiple plasmids', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Kp CAV1193 (real)' }).click()
+    const val = await page.locator('.wolvercote-editor').inputValue()
+    expect(val).toContain('CAV1193')
+    expect(val).toContain('pKPC_CAV1193')
+    expect(val).toContain('blaKPC-3')
+    const circles = await page.locator('.svg-viewer circle').count()
+    expect(circles).toBeGreaterThanOrEqual(2) // chromosome + plasmids
+    await expect(page.locator('.validation-error')).not.toBeVisible()
+  })
+})
+
+test.describe('builder colour feature', () => {
+  test('colour picker is shown in add modal for MGE types', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '+ Add element' }).click()
+    await page.locator('.builder-modal-select').selectOption('plasmid')
+    // colour input should be present (type=color)
+    await expect(page.locator('input[type="color"]')).toBeVisible()
+  })
+
+  test('colour attribute appears in format string when non-default', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.wolvercote-editor').fill('')
+    await page.getByRole('button', { name: '+ Add element' }).click()
+    await page.locator('.builder-modal-select').selectOption('plasmid')
+    await page.locator('.builder-modal-input').first().fill('myPlasmid')
+    // Set a custom colour via the text hex input
+    await page.locator('input[type="text"]').nth(1).fill('#ff0000')
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    const val = await page.locator('.wolvercote-editor').inputValue()
+    expect(val).toContain('myPlasmid')
+    expect(val).toContain('colour="#ff0000"')
+  })
+
+  test('Other MGE type is available', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: '+ Add element' }).click()
+    await expect(page.locator('.builder-modal-select option[value="other"]')).toBeAttached()
+  })
+})
+
+test.describe('about page content', () => {
+  test('About page shows abstract content', async ({ page }) => {
+    await page.goto('/about')
+    await expect(page.getByRole('heading', { name: 'Abstract' })).toBeVisible()
+    await expect(page.locator('.about-page-lead')).toBeVisible()
+  })
+
+  test('About page shows grammar section', async ({ page }) => {
+    await page.goto('/about')
+    await expect(page.getByRole('heading', { name: 'Grammar' })).toBeVisible()
+  })
+
+  test('About page shows key features', async ({ page }) => {
+    await page.goto('/about')
+    await expect(page.getByText('Key features')).toBeVisible()
+    await expect(page.getByText('Within-cell linkage')).toBeVisible()
   })
 })

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { FileUpload } from '@genomicx/ui'
+import { FileUpload, ThemeToggle } from '@genomicx/ui'
 import { parseWolvercote } from './wolvercote/parser'
 import { renderSVG } from './wolvercote/renderer'
 import { parseGenBank, parseGFF, detectFileType } from './wolvercote/genbank'
@@ -12,21 +12,21 @@ declare const __APP_VERSION__: string
 const EXAMPLES = [
   { label: 'Chr + plasmid', value: '()chr1,{}pBAD' },
   { label: 'Chr with integron', value: '({}integron)my_chr' },
-  { label: 'Chr + plasmid (integrated)', value: '({}plasmid1)chromosome,{}plasmid1' },
   { label: 'Transposon + integron', value: '( {}transposon1 )chromosome , { {}transposon2, {}integron }plasmid' },
   { label: 'Two cells', value: '()chromosome1,{}plasmidA ; ()chromosome2,{}plasmidA' },
+  { label: 'KPC in Tn4401 (pKpQIL)', value: '()chromosome, { { {}blaKPC-3 }Tn4401 }pKpQIL' },
+  { label: 'OXA-48 in Tn1999', value: '()chromosome, { { {}blaOXA-48 }Tn1999 }pOXA-48a' },
+  { label: 'CTX-M on ISEcp1', value: '()chromosome, { { {}blaCTX-M-15 }ISEcp1 }pCTX-M-3' },
+  { label: 'Kp CAV1193 (real)', value: '()CAV1193, {}pCAV1193-166, {}pCAV1193-258, {}pCAV1193-78, { { {}blaKPC-3 }Tn4401 }pKPC_CAV1193' },
   { label: 'With attributes', value: '()chromosome[organism="E. coli", strain="K-12"]' },
 ]
-
-type Tab = 'builder' | 'import'
 
 export default function App() {
   const [text, setText] = useState(EXAMPLES[0].value)
   const [uploadFiles, setUploadFiles] = useState<File[]>([])
   const [uploadError, setUploadError] = useState('')
-  const [tab, setTab] = useState<Tab>('builder')
+  const [showImport, setShowImport] = useState(false)
   const [builderSyncVersion, setBuilderSyncVersion] = useState(0)
-  // Track whether the last text change came from the builder (to avoid sync loops)
   const fromBuilder = useRef(false)
 
   const parsed = parseWolvercote(text)
@@ -41,7 +41,6 @@ export default function App() {
     fromBuilder.current = false
     const val = e.target.value
     setText(val)
-    // Sync builder on valid parse, or reset it when textarea is cleared
     const result = parseWolvercote(val)
     if (result.ok || val.trim() === '') setBuilderSyncVersion((v) => v + 1)
   }
@@ -73,6 +72,7 @@ export default function App() {
       fromBuilder.current = false
       setText(result.wolvercote)
       setBuilderSyncVersion((v) => v + 1)
+      setShowImport(false)
     }
     reader.readAsText(file)
   }, [])
@@ -115,6 +115,7 @@ export default function App() {
           </div>
           <nav className="app-header-nav">
             <span className="app-header-version">v{__APP_VERSION__}</span>
+            <ThemeToggle />
             <Link to="/about" className="app-header-link-btn">About</Link>
             <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub</a>
           </nav>
@@ -122,29 +123,26 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        {/* Tabs */}
-        <div className="tabs">
-          <button className={`tab-btn${tab === 'builder' ? ' active' : ''}`} onClick={() => setTab('builder')}>
-            Interactive builder
-          </button>
-          <button className={`tab-btn${tab === 'import' ? ' active' : ''}`} onClick={() => setTab('import')}>
-            Import GenBank / GFF
+        {/* Examples bar */}
+        <div className="examples-bar">
+          {EXAMPLES.map((ex) => (
+            <button key={ex.label} className="example-btn" onClick={() => loadExample(ex.value)}>
+              {ex.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Import toggle */}
+        <div className="import-toggle-row">
+          <button
+            className="import-toggle-btn"
+            onClick={() => setShowImport((v) => !v)}
+          >
+            {showImport ? 'Hide import' : '+ Import GenBank / GFF'}
           </button>
         </div>
 
-        {/* Examples bar — always shown in builder tab */}
-        {tab === 'builder' && (
-          <div className="examples-bar">
-            {EXAMPLES.map((ex) => (
-              <button key={ex.label} className="example-btn" onClick={() => loadExample(ex.value)}>
-                {ex.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* GenBank / GFF upload */}
-        {tab === 'import' && (
+        {showImport && (
           <div className="upload-row">
             <FileUpload
               files={uploadFiles}

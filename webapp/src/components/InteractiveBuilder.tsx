@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 import type { CellSet, ChromosomeNode, MGENode } from '../wolvercote/types'
 
-type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage'
+type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'other'
 
 const ELEMENT_LABELS: Record<ElementType, string> = {
   chromosome: 'Chromosome',
@@ -15,19 +15,25 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
   integron: 'Integron',
   insertion_sequence: 'Insertion sequence',
   phage: 'Prophage',
+  other: 'Other',
 }
 
-const ELEMENT_COLOURS: Record<string, string> = {
+const DEFAULT_COLOURS: Record<string, string> = {
   chromosome: '#3a6fba',
   plasmid: '#3a9943',
   transposon: '#e05252',
   integron: '#9b59b6',
   insertion_sequence: '#f39c12',
   phage: '#16a085',
+  other: '#888888',
 }
 
-function elementDot(type: ElementType) {
-  const colour = ELEMENT_COLOURS[type] || '#888'
+function resolveColour(type: ElementType, customColour?: string): string {
+  return customColour || DEFAULT_COLOURS[type] || '#888'
+}
+
+function elementDot(type: ElementType, customColour?: string) {
+  const colour = resolveColour(type, customColour)
   return (
     <span
       style={{
@@ -48,6 +54,7 @@ function elementDot(type: ElementType) {
 interface MGEItem {
   type: ElementType
   label: string
+  colour?: string   // custom colour; undefined = use type default
   mges: MGEItem[]
 }
 
@@ -60,7 +67,9 @@ interface BuilderState {
 
 function mgeItemStr(m: MGEItem): string {
   const inner = m.mges.map(mgeItemStr).join(', ')
-  return `{${inner}}${m.label}`
+  const defaultCol = DEFAULT_COLOURS[m.type] || '#888'
+  const attrs = m.colour && m.colour !== defaultCol ? `[colour="${m.colour}"]` : ''
+  return `{${inner}}${m.label}${attrs}`
 }
 
 function stateToWolvercote(state: BuilderState): string {
@@ -89,9 +98,12 @@ function mgeTypeFromLabel(label: string): ElementType {
 }
 
 function mgeNodeToItem(m: MGENode): MGEItem {
+  const type = mgeTypeFromLabel(m.label)
+  const colour = m.attributes.colour || undefined
   return {
-    type: mgeTypeFromLabel(m.label),
+    type,
     label: m.label,
+    colour,
     mges: m.children.map(mgeNodeToItem),
   }
 }
@@ -120,13 +132,13 @@ function getAtPath(root: MGEItem[], path: MGEPath): MGEItem {
 
 // Modal identifies *where* to add or what to edit
 type ModalTarget =
-  | { kind: 'cell' }                                                        // add chr or top-level MGE to cell
-  | { kind: 'chr'; chrIdx: number }                                         // add MGE at root of chromosome
-  | { kind: 'chr-mge'; chrIdx: number; path: MGEPath }                      // add MGE inside a chr's MGE subtree
-  | { kind: 'mge'; path: MGEPath }                                          // add MGE inside a top-level MGE subtree
-  | { kind: 'edit-chr'; chrIdx: number }                                    // edit a chromosome's label
-  | { kind: 'edit-chr-mge'; chrIdx: number; path: MGEPath }                 // edit an MGE nested inside a chromosome
-  | { kind: 'edit-mge'; path: MGEPath }                                     // edit a top-level or nested MGE
+  | { kind: 'cell' }
+  | { kind: 'chr'; chrIdx: number }
+  | { kind: 'chr-mge'; chrIdx: number; path: MGEPath }
+  | { kind: 'mge'; path: MGEPath }
+  | { kind: 'edit-chr'; chrIdx: number }
+  | { kind: 'edit-chr-mge'; chrIdx: number; path: MGEPath }
+  | { kind: 'edit-mge'; path: MGEPath }
 
 interface ModalState {
   cellIdx: number
@@ -145,12 +157,12 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   const [modal, setModal] = useState<ModalState | null>(null)
   const [newLabel, setNewLabel] = useState('')
   const [newType, setNewType] = useState<ElementType>('chromosome')
+  const [newColour, setNewColour] = useState('')
 
   useEffect(() => {
     if (syncFrom) {
       setState(cellSetToBuilderState(syncFrom))
     } else {
-      // syncVersion was incremented but parse is null → clear to empty
       setState({ cells: [{ chromosomes: [], mges: [] }] })
     }
   }, [syncVersion]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -165,22 +177,25 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     setModal({ cellIdx, target, isEdit: false })
     setNewLabel('')
     setNewType(forNested ? 'transposon' : 'chromosome')
+    setNewColour('')
   }
 
-  const openEdit = (cellIdx: number, target: ModalTarget, currentLabel: string, currentType: ElementType) => {
+  const openEdit = (cellIdx: number, target: ModalTarget, currentLabel: string, currentType: ElementType, currentColour?: string) => {
     setModal({ cellIdx, target, isEdit: true })
     setNewLabel(currentLabel)
     setNewType(currentType)
+    setNewColour(currentColour || '')
   }
 
   const confirmAdd = () => {
     if (!modal) return
     const label = newLabel.trim()
+    const defaultCol = DEFAULT_COLOURS[newType] || '#888'
+    const colour = newColour && newColour !== defaultCol ? newColour : undefined
     const next = JSON.parse(JSON.stringify(state)) as BuilderState
     const cell = next.cells[modal.cellIdx]
 
     if (modal.isEdit) {
-      // Edit mode — update existing element in place
       const t = modal.target
       if (t.kind === 'edit-chr') {
         cell.chromosomes[t.chrIdx].label = label
@@ -189,33 +204,34 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
         const item = t.path.length === 1 ? root[t.path[0]] : getAtPath(root, t.path)
         item.label = label
         item.type = newType
+        item.colour = colour
       } else if (t.kind === 'edit-mge') {
         const item = t.path.length === 1 ? cell.mges[t.path[0]] : getAtPath(cell.mges, t.path)
         item.label = label
         item.type = newType
+        item.colour = colour
       }
     } else {
-      // Add mode
       if (modal.target.kind === 'cell') {
         if (newType === 'chromosome') {
           cell.chromosomes.push({ label, mges: [] })
         } else {
-          cell.mges.push({ type: newType, label, mges: [] })
+          cell.mges.push({ type: newType, label, colour, mges: [] })
         }
       } else if (modal.target.kind === 'chr') {
-        cell.chromosomes[modal.target.chrIdx].mges.push({ type: newType, label, mges: [] })
+        cell.chromosomes[modal.target.chrIdx].mges.push({ type: newType, label, colour, mges: [] })
       } else if (modal.target.kind === 'chr-mge') {
         const { chrIdx, path } = modal.target
         const root = cell.chromosomes[chrIdx].mges
         const target = path.length === 1 ? root[path[0]] : getAtPath(root, path)
-        target.mges.push({ type: newType, label, mges: [] })
+        target.mges.push({ type: newType, label, colour, mges: [] })
       } else if (modal.target.kind === 'mge') {
         const { path } = modal.target
         const root = cell.mges
         if (path.length === 1) {
-          root[path[0]].mges.push({ type: newType, label, mges: [] })
+          root[path[0]].mges.push({ type: newType, label, colour, mges: [] })
         } else {
-          getAtPath(root, path).mges.push({ type: newType, label, mges: [] })
+          getAtPath(root, path).mges.push({ type: newType, label, colour, mges: [] })
         }
       }
     }
@@ -260,23 +276,21 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   }
 
   const isChrEdit = modal?.target.kind === 'edit-chr'
-  // For chr-mge targets, treat nested additions like MGE (not chromosome)
 
   const typeOptions =
     modal?.target.kind === 'cell'
-      ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage'] as ElementType[])
-      : (['transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid'] as ElementType[])
+      ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage', 'other'] as ElementType[])
+      : (['transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid', 'other'] as ElementType[])
 
-  // Render an MGE as a nested card — children appear inside the parent card
   function renderMGEItem(ci: number, path: MGEPath, item: MGEItem, depth: number) {
-    const colour = ELEMENT_COLOURS[item.type] || '#888'
+    const colour = resolveColour(item.type, item.colour)
     return (
       <div key={path.join('-')} className="mge-card" style={{ borderLeftColor: colour }}>
         <div className="mge-card-header">
-          {elementDot(item.type)}
+          {elementDot(item.type, item.colour)}
           <button
             className="builder-label-btn mge-card-label"
-            onClick={() => openEdit(ci, { kind: 'edit-mge', path }, item.label, item.type)}
+            onClick={() => openEdit(ci, { kind: 'edit-mge', path }, item.label, item.type, item.colour)}
             title="Click to edit"
           >
             {item.label || `(${item.type})`}
@@ -295,14 +309,14 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   }
 
   function renderChrMGEItem(ci: number, chrIdx: number, path: MGEPath, item: MGEItem) {
-    const colour = ELEMENT_COLOURS[item.type] || '#888'
+    const colour = resolveColour(item.type, item.colour)
     return (
       <div key={path.join('-')} className="mge-card" style={{ borderLeftColor: colour }}>
         <div className="mge-card-header">
-          {elementDot(item.type)}
+          {elementDot(item.type, item.colour)}
           <button
             className="builder-label-btn mge-card-label"
-            onClick={() => openEdit(ci, { kind: 'edit-chr-mge', chrIdx, path }, item.label, item.type)}
+            onClick={() => openEdit(ci, { kind: 'edit-chr-mge', chrIdx, path }, item.label, item.type, item.colour)}
             title="Click to edit"
           >
             {item.label || `(${item.type})`}
@@ -331,7 +345,6 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
             )}
           </div>
 
-          {/* Chromosomes */}
           {cell.chromosomes.map((chr, chri) => (
             <div key={chri} className="builder-replicon builder-chr">
               <div className="builder-replicon-header">
@@ -355,16 +368,15 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
             </div>
           ))}
 
-          {/* Top-level MGEs (plasmids etc.) — use card style, support arbitrary nesting */}
           {cell.mges.map((mge, mi) => {
-            const colour = ELEMENT_COLOURS[mge.type] || '#3a9943'
+            const colour = resolveColour(mge.type, mge.colour)
             return (
               <div key={mi} className="mge-card" style={{ borderLeftColor: colour }}>
                 <div className="mge-card-header">
-                  {elementDot(mge.type)}
+                  {elementDot(mge.type, mge.colour)}
                   <button
                     className="builder-label-btn mge-card-label"
-                    onClick={() => openEdit(ci, { kind: 'edit-mge', path: [mi] }, mge.label, mge.type)}
+                    onClick={() => openEdit(ci, { kind: 'edit-mge', path: [mi] }, mge.label, mge.type, mge.colour)}
                     title="Click to edit"
                   >
                     {mge.label || `(${mge.type})`}
@@ -388,11 +400,14 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
         </div>
       ))}
 
-      <button className="gx-btn gx-btn-secondary" onClick={() => update({ cells: [...state.cells, { chromosomes: [], mges: [] }] })} style={{ marginTop: '0.75rem' }}>
+      <button
+        className="gx-btn gx-btn-secondary"
+        onClick={() => update({ cells: [...state.cells, { chromosomes: [], mges: [] }] })}
+        style={{ marginTop: '0.75rem' }}
+      >
         + Add cell
       </button>
 
-      {/* Modal */}
       {modal && (
         <div className="builder-modal-overlay" onClick={() => setModal(null)}>
           <div className="builder-modal" onClick={(e) => e.stopPropagation()}>
@@ -406,7 +421,12 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
                 <select
                   className="builder-modal-select"
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as ElementType)}
+                  onChange={(e) => {
+                    const t = e.target.value as ElementType
+                    setNewType(t)
+                    // Reset colour when type changes so it defaults to new type's colour
+                    if (!newColour || newColour === DEFAULT_COLOURS[newType]) setNewColour('')
+                  }}
                 >
                   {typeOptions.map((t) => (
                     <option key={t} value={t}>{ELEMENT_LABELS[t]}</option>
@@ -425,6 +445,43 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && confirmAdd()}
             />
+
+            {!isChrEdit && (
+              <>
+                <label className="builder-modal-label">
+                  Colour{' '}
+                  <span style={{ color: 'var(--gx-text-muted)', fontWeight: 400 }}>
+                    (default: {DEFAULT_COLOURS[newType] || '#888'})
+                  </span>
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="color"
+                    value={newColour || DEFAULT_COLOURS[newType] || '#888888'}
+                    onChange={(e) => setNewColour(e.target.value)}
+                    style={{ width: 36, height: 28, border: '1px solid var(--gx-border)', borderRadius: 4, cursor: 'pointer', padding: 2 }}
+                  />
+                  <input
+                    className="builder-modal-input"
+                    type="text"
+                    value={newColour || DEFAULT_COLOURS[newType] || '#888888'}
+                    onChange={(e) => setNewColour(e.target.value)}
+                    placeholder={DEFAULT_COLOURS[newType] || '#888888'}
+                    style={{ flex: 1 }}
+                  />
+                  {newColour && newColour !== DEFAULT_COLOURS[newType] && (
+                    <button
+                      className="builder-remove-btn"
+                      title="Reset to default"
+                      onClick={() => setNewColour('')}
+                      style={{ marginLeft: 0 }}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             <div className="builder-modal-actions">
               <button className="gx-btn gx-btn-secondary" onClick={() => setModal(null)}>Cancel</button>

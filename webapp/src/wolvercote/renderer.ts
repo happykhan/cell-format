@@ -25,7 +25,8 @@ const ARC_BAND_MGE = 10   // radial thickness of the outermost arc band on MGE c
 const ARC_TAPER = 0.85    // each deeper nesting level is this fraction narrower
 const ARC_HALF = 0.28     // half-width of each depth-0 arc marker (radians ≈ 16°)
 
-function elementColour(label: string, index: number): string {
+function elementColour(label: string, index: number, customColour?: string): string {
+  if (customColour) return customColour
   const l = label.toLowerCase()
   if (l.includes('transposon') || l.startsWith('tn')) return '#e05252'
   if (l.includes('integron') || l.startsWith('int')) return '#9b59b6'
@@ -136,7 +137,7 @@ function renderNestedArcs(
     const ea0 = a0 + i * (arcSpan + gap)
     const ea1 = ea0 + arcSpan
     const mid = (ea0 + ea1) / 2
-    const colour = elementColour(el.label, i + depth * 7)
+    const colour = elementColour(el.label, i + depth * 7, el.attributes.colour)
     svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
 
     if (el.label && arcSpan > 0.18) {
@@ -173,7 +174,7 @@ function renderArcs(
     const center = startAngle + (2 * Math.PI * i) / n
     const a0 = center - halfSpan
     const a1 = center + halfSpan
-    const colour = elementColour(el.label, i)
+    const colour = elementColour(el.label, i, el.attributes.colour)
 
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
@@ -199,7 +200,7 @@ function measureCell(cell: Cell): [number, number] {
   const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + 50 : 0
   const width = chrColW + mgeColW + PAD
 
-  const chrColH = Math.max(chrs.length, 1) * (CHR_R * 2 + PAD) + PAD + 30
+  const chrColH = Math.max(chrs.length, 1) * (CHR_R * 2 + PAD + 160) + PAD + 30
   const mgeColH = mges.length ? mges.length * (MGE_R * 2 + PAD + 30) + PAD + 30 : 0
   const height = Math.max(chrColH, mgeColH, CHR_R * 2 + PAD * 2 + 60)
 
@@ -213,11 +214,11 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
 
   // Chromosomes — vertically centred
   if (chrs.length) {
-    const totalH = chrs.length * CHR_R * 2 + (chrs.length - 1) * PAD
+    const totalH = chrs.length * CHR_R * 2 + (chrs.length - 1) * (PAD + 160)
     const startY = oy + (height - totalH) / 2
     chrs.forEach((ch, i) => {
       const cx = ox + chrColW / 2        // centred so arcs have equal space on both sides
-      const cy = startY + i * (CHR_R * 2 + PAD) + CHR_R
+      const cy = startY + i * (CHR_R * 2 + PAD + 160) + CHR_R
       svg.circle(cx, cy, CHR_R, CHR_FILL, CHR_STROKE, CHR_SW)
       renderArcs(ch.children, cx, cy, CHR_R, ARC_BAND_CHR, svg)
       if (ch.label) svg.text(cx, cy + 5 + (ch.children.length ? 0 : CHR_R * 0.4), ch.label, 15)
