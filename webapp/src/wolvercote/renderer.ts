@@ -369,7 +369,7 @@ function renderCell(cell: Cell, cx: number, cy: number, svg: SVGBuilder): void {
     const my = cy + mgeRingR * Math.sin(angle)
     svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
     renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg, angle)
-    if (mge.label) svg.text(mx, my + 5, mge.label, 13)
+    if (mge.label) svg.text(mx, my + 4, mge.label, 11)
   })
 }
 
