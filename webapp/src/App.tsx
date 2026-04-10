@@ -238,10 +238,22 @@ export default function App() {
               </tbody>
             </table>
 
+            <div className="about-section">Authors</div>
+            <p className="about-desc" style={{ marginBottom: '0.5rem' }}>
+              Centre for Genomic Pathogen Surveillance, University of Oxford
+            </p>
+            <ul className="about-authors">
+              <li>Julio Diaz Caballero</li>
+              <li>Nabil-Fareed Alikhan</li>
+              <li>Khalil AbuDahab</li>
+              <li>David Aanensen</li>
+            </ul>
+
             <div className="about-section">Links</div>
             <div className="about-links">
               <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub repository</a>
               <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">Report a bug</a>
+              <a href="https://www.pathogensurveillance.net" target="_blank" rel="noreferrer">CGPS</a>
             </div>
           </div>
         </div>
