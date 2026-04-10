@@ -417,6 +417,53 @@
 
 .builder-add-nested-btn:hover { color: var(--gx-accent); }
 
+/* ── Nested MGE cards ────────────────────────── */
+.mge-card {
+  border: 1px solid var(--gx-border);
+  border-left: 3px solid #3a9943;
+  border-radius: var(--gx-radius);
+  padding: 0.5rem 0.6rem;
+  margin: 0.35rem 0;
+  background: var(--gx-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.mge-card .mge-card {
+  /* nested card: slightly inset look */
+  margin: 0.25rem 0 0 0.5rem;
+  background: color-mix(in srgb, var(--gx-border) 20%, var(--gx-bg));
+}
+
+.mge-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.mge-card-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.mge-add-inside-btn {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--gx-accent);
+  border-radius: var(--gx-radius);
+  background: none;
+  color: var(--gx-accent);
+  cursor: pointer;
+  align-self: flex-start;
+  margin-top: 0.1rem;
+  font-family: inherit;
+}
+
+.mge-add-inside-btn:hover {
+  background: color-mix(in srgb, var(--gx-accent) 10%, transparent);
+}
+
 /* ── Modal ───────────────────────────────────── */
 .builder-modal-overlay {
   position: fixed;

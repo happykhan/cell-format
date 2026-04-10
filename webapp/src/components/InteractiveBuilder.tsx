@@ -221,26 +221,19 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
       ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage'] as ElementType[])
       : (['transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid'] as ElementType[])
 
-  // Render an MGE tree item and its children recursively
+  // Render an MGE as a nested card — children appear inside the parent card
   function renderMGEItem(ci: number, path: MGEPath, item: MGEItem, depth: number) {
-    const indent = depth * 16
+    const colour = ELEMENT_COLOURS[item.type] || '#888'
     return (
-      <div key={path.join('-')} style={{ marginLeft: indent }}>
-        <div className="builder-nested">
+      <div key={path.join('-')} className="mge-card" style={{ borderLeftColor: colour }}>
+        <div className="mge-card-header">
           {elementDot(item.type)}
-          <span>{item.label || `(${item.type})`}</span>
-          <button
-            className="builder-remove-btn"
-            title="Remove"
-            onClick={() => removeMGE(ci, path)}
-          >
-            ×
-          </button>
+          <span className="mge-card-label">{item.label || `(${item.type})`}</span>
+          <button className="builder-remove-btn" title="Remove" onClick={() => removeMGE(ci, path)}>×</button>
         </div>
         {item.mges.map((child, ni) => renderMGEItem(ci, [...path, ni], child, depth + 1))}
         <button
-          className="builder-add-nested-btn"
-          style={{ marginLeft: indent + 12 }}
+          className="mge-add-inside-btn"
           onClick={() => openModal(ci, { kind: 'mge', path })}
         >
           + Add inside {item.label || item.type}
@@ -300,23 +293,26 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
             </div>
           ))}
 
-          {/* Top-level MGEs (plasmids etc.) — support arbitrary nesting */}
-          {cell.mges.map((mge, mi) => (
-            <div key={mi} className="builder-replicon builder-mge">
-              <div className="builder-replicon-header">
-                {elementDot(mge.type)}
-                <span>{mge.label || `(${mge.type})`}</span>
-                <button className="builder-remove-btn" onClick={() => removeMGE(ci, [mi])}>×</button>
+          {/* Top-level MGEs (plasmids etc.) — use card style, support arbitrary nesting */}
+          {cell.mges.map((mge, mi) => {
+            const colour = ELEMENT_COLOURS[mge.type] || '#3a9943'
+            return (
+              <div key={mi} className="mge-card" style={{ borderLeftColor: colour }}>
+                <div className="mge-card-header">
+                  {elementDot(mge.type)}
+                  <span className="mge-card-label">{mge.label || `(${mge.type})`}</span>
+                  <button className="builder-remove-btn" onClick={() => removeMGE(ci, [mi])}>×</button>
+                </div>
+                {mge.mges.map((child, ni) => renderMGEItem(ci, [mi, ni], child, 1))}
+                <button
+                  className="mge-add-inside-btn"
+                  onClick={() => openModal(ci, { kind: 'mge', path: [mi] })}
+                >
+                  + Add inside {mge.label || mge.type}
+                </button>
               </div>
-              {mge.mges.map((child, ni) => renderMGEItem(ci, [mi, ni], child, 1))}
-              <button
-                className="builder-add-nested-btn"
-                onClick={() => openModal(ci, { kind: 'mge', path: [mi] })}
-              >
-                + Add MGE inside {mge.label || mge.type}
-              </button>
-            </div>
-          ))}
+            )
+          })}
 
           <button className="builder-add-btn" onClick={() => openModal(ci, { kind: 'cell' })}>
             + Add element
