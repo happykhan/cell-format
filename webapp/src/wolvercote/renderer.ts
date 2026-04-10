@@ -322,7 +322,7 @@ function computeCellLayout(cell: Cell): CellLayout {
   let mgeLabelOuterR = 0
 
   if (nMge > 0) {
-    const baseR = (nChr > 0 ? chrPhysOuterR + PAD : 0) + MGE_R
+    const baseR = (nChr > 0 ? chrLabelOuterR + PAD : 0) + MGE_R
     const minNonOverlap = nMge > 1 ? (MGE_R + PAD / 2) / Math.sin(Math.PI / nMge) : 0
     mgeRingR = Math.max(baseR, minNonOverlap)
 
