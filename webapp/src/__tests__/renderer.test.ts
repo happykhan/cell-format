@@ -41,17 +41,17 @@ describe('renderSVG', () => {
     expect(out).toContain('#3a9943')  // MGE_STROKE
   })
 
-  it('renders nested MGE elements as rects', () => {
+  it('renders nested MGE elements as arc sectors', () => {
     const out = svg('({}Tn3)chr1')
-    expect(out).toContain('<rect')
+    expect(out).toContain('<path')   // arc elements use SVG path
     expect(out).toContain('Tn3')
   })
 
   it('shows containment for deeply nested elements', () => {
     const out = svg('{ { {}blaKPC-2 }Tn4401 }pKpQIL')
-    // Parent rect should have white stroke to signal containment
+    // Arc borders use white stroke to visually separate sectors
     expect(out).toContain('stroke="white"')
-    // Both labels present
+    // Outermost child label present; deeply nested label omitted (too small)
     expect(out).toContain('Tn4401')
     expect(out).toContain('pKpQIL')
   })

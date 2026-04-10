@@ -20,6 +20,10 @@ const MGE_R = 44
 const PAD = 24
 const FONT = 'Inter, Arial, sans-serif'
 
+const ARC_BAND_CHR = 18   // radial thickness per nesting level on chromosomes
+const ARC_BAND_MGE = 10   // radial thickness per nesting level on MGE circles
+const ARC_GAP = 0.06      // angular gap between siblings (radians)
+
 function elementColour(label: string, index: number): string {
   const l = label.toLowerCase()
   if (l.includes('transposon') || l.startsWith('tn')) return '#e05252'
@@ -63,6 +67,21 @@ class SVGBuilder {
     )
   }
 
+  arc(cx: number, cy: number, outerR: number, innerR: number, a0: number, a1: number, fill: string, stroke = '', sw = 0): void {
+    const cos0 = Math.cos(a0), sin0 = Math.sin(a0)
+    const cos1 = Math.cos(a1), sin1 = Math.sin(a1)
+    const large = (a1 - a0) > Math.PI ? 1 : 0
+    const d = [
+      `M ${(cx + outerR * cos0).toFixed(2)},${(cy + outerR * sin0).toFixed(2)}`,
+      `A ${outerR.toFixed(2)},${outerR.toFixed(2)} 0 ${large},1 ${(cx + outerR * cos1).toFixed(2)},${(cy + outerR * sin1).toFixed(2)}`,
+      `L ${(cx + innerR * cos1).toFixed(2)},${(cy + innerR * sin1).toFixed(2)}`,
+      `A ${innerR.toFixed(2)},${innerR.toFixed(2)} 0 ${large},0 ${(cx + innerR * cos0).toFixed(2)},${(cy + innerR * sin0).toFixed(2)}`,
+      'Z',
+    ].join(' ')
+    const strokeAttr = stroke ? ` stroke="${stroke}" stroke-width="${sw}"` : ''
+    this.parts.push(`<path d="${d}" fill="${fill}"${strokeAttr}/>`)
+  }
+
   line(x1: number, y1: number, x2: number, y2: number, stroke = '#ccc', sw = 1.5, dash = ''): void {
     const da = dash ? ` stroke-dasharray="${dash}"` : ''
     this.parts.push(
@@ -84,42 +103,47 @@ class SVGBuilder {
   }
 }
 
-function renderNested(
+/**
+ * Render MGE elements as concentric arc sectors on a circle.
+ * Each element at depth=0 gets an equal angular slice of the full circle.
+ * Children recursively subdivide their parent's angular slice, one band inward.
+ * Depth=0 element labels are placed outside the circle at the arc midpoint.
+ */
+function renderArcs(
   elements: MGENode[],
-  px: number,
-  py: number,
-  pr: number,
+  cx: number, cy: number,
+  outerR: number, bandW: number,
+  startAngle: number, totalSpan: number,
   svg: SVGBuilder,
+  depth: number,
 ): void {
   const n = elements.length
+  if (!n || outerR - bandW < 4) return
+
+  const innerR = outerR - bandW
+  const totalGap = ARC_GAP * n
+  const available = Math.max(0, totalSpan - totalGap)
+  const arcSpan = available / n
+  if (arcSpan < 0.02) return
+
   elements.forEach((el, i) => {
-    const angle = (2 * Math.PI * i) / n - Math.PI / 2
-    const bx = px + pr * Math.cos(angle)
-    const by = py + pr * Math.sin(angle)
-    const colour = elementColour(el.label, i)
-    const deg = (angle * 180) / Math.PI + 90
+    const a0 = startAngle + i * (arcSpan + ARC_GAP)
+    const a1 = a0 + arcSpan
+    const colour = elementColour(el.label, i + depth * 7)
 
-    // Parent rect — white outline when it has children to signal containment
-    const hasChildren = el.children.length > 0
-    svg.rectRotated(bx, by, 18, 11, colour, deg, hasChildren ? 'white' : '', hasChildren ? 1.5 : 0)
+    svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
-    // Children shown as small coloured stripes inside the parent rect.
-    // Offset along the tangential direction (angle + π/2).
-    if (hasChildren) {
-      const nc = el.children.length
-      const spacing = Math.min(5, 14 / nc)
-      el.children.forEach((child, j) => {
-        const childColour = elementColour(child.label, j)
-        const offset = (j - (nc - 1) / 2) * spacing
-        const cx = bx + offset * Math.cos(angle + Math.PI / 2)
-        const cy = by + offset * Math.sin(angle + Math.PI / 2)
-        svg.rectRotated(cx, cy, 4, 8, childColour, deg, 'white', 0.5)
-      })
+    // Labels only for outermost elements, placed outside the circle
+    if (depth === 0 && el.label) {
+      const mid = (a0 + a1) / 2
+      const lx = cx + (outerR + 16) * Math.cos(mid)
+      const ly = cy + (outerR + 16) * Math.sin(mid)
+      svg.text(lx, ly + 4, el.label, 11, 'middle', '#444')
     }
 
-    const lx = px + (pr + 26) * Math.cos(angle)
-    const ly = py + (pr + 26) * Math.sin(angle)
-    if (el.label) svg.text(lx, ly + 4, el.label, 12, 'middle', '#444')
+    if (el.children.length) {
+      renderArcs(el.children, cx, cy, innerR, bandW, a0, arcSpan, svg, depth + 1)
+    }
   })
 }
 
@@ -127,7 +151,7 @@ function measureCell(cell: Cell): [number, number] {
   const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
   const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
 
-  const chrColW = CHR_R * 2 + PAD * 2
+  const chrColW = CHR_R * 2 + PAD * 2 + 40   // +40 for arc element labels outside circle
   const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + 50 : 0
   const width = chrColW + mgeColW + PAD
 
@@ -148,11 +172,11 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
     const totalH = chrs.length * CHR_R * 2 + (chrs.length - 1) * PAD
     const startY = oy + (height - totalH) / 2
     chrs.forEach((ch, i) => {
-      const cx = ox + CHR_R + PAD
+      const cx = ox + CHR_R + PAD + 20   // shift right to give room for left-side arc labels
       const cy = startY + i * (CHR_R * 2 + PAD) + CHR_R
       svg.circle(cx, cy, CHR_R, CHR_FILL, CHR_STROKE, CHR_SW)
+      renderArcs(ch.children, cx, cy, CHR_R, ARC_BAND_CHR, -Math.PI / 2, 2 * Math.PI, svg, 0)
       if (ch.label) svg.text(cx, cy + 5 + (ch.children.length ? 0 : CHR_R * 0.4), ch.label, 15)
-      renderNested(ch.children, cx, cy, CHR_R, svg)
     })
   }
 
@@ -166,8 +190,8 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
       const mx = mgeColX + MGE_R + PAD
       const my = startMY + i * (MGE_R * 2 + PAD + 30) + MGE_R
       svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
+      renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, -Math.PI / 2, 2 * Math.PI, svg, 0)
       if (mge.label) svg.text(mx, my - MGE_R - 10, mge.label, 13)
-      renderNested(mge.children, mx, my, MGE_R, svg)
     })
     return mgeColX + MGE_R * 2 + PAD * 2 + 50
   }
