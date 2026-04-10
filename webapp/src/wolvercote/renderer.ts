@@ -193,11 +193,15 @@ function renderNestedArcs(
   })
 }
 
-const LABEL_STEP = 0.22  // radians between adjacent fanned labels (≈12.6°)
+/** Estimate SVG text width in pixels (rough but consistent). */
+function estimateLabelWidth(label: string, fontSize: number): number {
+  return fontSize * 0.6 * label.length
+}
 
 /**
  * Render top-level arc markers and fan all subtree labels around the arc centre.
  * 1 label → straight out; 2 → ±step/2; 3 → −step, 0, +step; etc.
+ * Step is computed dynamically so adjacent labels never visually overlap.
  */
 function renderArcs(
   elements: MGENode[],
@@ -237,8 +241,19 @@ function renderArcs(
     specs.sort((a, b) => b.outerR - a.outerR)
 
     const nl = specs.length
+    // Compute step: wide enough that adjacent label texts don't overlap
+    const step = nl > 1
+      ? Math.max(...specs.map((s, j) => {
+          if (j === 0) return 0
+          const prev = specs[j - 1]
+          const needed = (estimateLabelWidth(prev.label, prev.fontSize) +
+                          estimateLabelWidth(s.label, s.fontSize)) / 2 / labelRing + 0.06
+          return needed
+        }))
+      : 0
+
     specs.forEach((spec, j) => {
-      const spread = nl > 1 ? (j - (nl - 1) / 2) * LABEL_STEP : 0
+      const spread = nl > 1 ? (j - (nl - 1) / 2) * step : 0
       const labelAngle = center + spread
       svg.line(
         cx + spec.outerR * Math.cos(spec.arcMid),
@@ -261,13 +276,13 @@ function measureCell(cell: Cell): [number, number] {
   // Compute max label ring extent across all chromosomes and MGEs
   const chrLabelExt = chrs.reduce((mx, ch) => {
     const ext = ch.children.length
-      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 100
+      ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) + 14 + 150
       : 0
     return Math.max(mx, ext)
   }, 60)
   const mgeLabelExt = mges.reduce((mx, mge) => {
     const ext = mge.children.length
-      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 100
+      ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) + 14 + 150
       : 0
     return Math.max(mx, ext)
   }, 50)
