@@ -294,14 +294,39 @@
   padding-top: 0.75rem;
 }
 
+.format-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
 .format-preview-label {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--gx-text-muted);
-  margin-bottom: 0.4rem;
 }
+
+.copy-btn {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--gx-border);
+  border-radius: var(--gx-radius);
+  background: var(--gx-surface);
+  color: var(--gx-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.copy-btn:hover:not(:disabled) {
+  color: var(--gx-accent);
+  border-color: var(--gx-accent);
+}
+
+.copy-btn:disabled { opacity: 0.4; cursor: default; }
 
 .format-preview-textarea {
   min-height: unset !important;

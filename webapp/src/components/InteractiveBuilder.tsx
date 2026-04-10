@@ -183,10 +183,9 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   }
 
   const openModal = (cellIdx: number, target: ModalTarget) => {
-    const forNested = target.kind !== 'cell'
     setModal({ cellIdx, target, isEdit: false })
     setNewLabel('')
-    setNewType(forNested ? 'transposon' : 'chromosome')
+    setNewType(target.kind === 'cell' ? 'chromosome' : 'gene')
     setNewColour('')
   }
 
@@ -289,7 +288,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
   const typeOptions =
     modal?.target.kind === 'cell'
-      ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage', 'gene', 'other'] as ElementType[])
+      ? (['chromosome', 'plasmid'] as ElementType[])  // top-level: replicons only
       : (['gene', 'transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid', 'other'] as ElementType[])
 
   function renderMGEItem(ci: number, path: MGEPath, item: MGEItem, depth: number) {

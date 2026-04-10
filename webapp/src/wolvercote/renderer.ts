@@ -153,7 +153,7 @@ function renderNestedArcs(
 
     if (el.label && arcSpan > 0.18) {
       // Push labels further out per depth level so radially-stacked labels don't collide
-      const labelR = outerR + 10 + depth * 14
+      const labelR = outerR + 10 + depth * 24
       const lx = cx + labelR * Math.cos(mid)
       const ly = cy + labelR * Math.sin(mid) + 4
       svg.text(lx, ly, el.label, 10, arcAnchor(mid), '#555')

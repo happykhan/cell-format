@@ -27,6 +27,7 @@ export default function App() {
   const [uploadError, setUploadError] = useState('')
   const [showImport, setShowImport] = useState(false)
   const [builderSyncVersion, setBuilderSyncVersion] = useState(0)
+  const [copied, setCopied] = useState(false)
   const fromBuilder = useRef(false)
 
   const parsed = parseWolvercote(text)
@@ -88,6 +89,30 @@ export default function App() {
     URL.revokeObjectURL(url)
   }
 
+  const downloadPNG = () => {
+    if (!svgOutput) return
+    const blob = new Blob([svgOutput], { type: 'image/svg+xml' })
+    const url = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth * 2   // 2× for retina
+      canvas.height = img.naturalHeight * 2
+      const ctx = canvas.getContext('2d')!
+      ctx.scale(2, 2)
+      ctx.fillStyle = 'white'
+      ctx.fillRect(0, 0, img.naturalWidth, img.naturalHeight)
+      ctx.drawImage(img, 0, 0)
+      URL.revokeObjectURL(url)
+      const pngUrl = canvas.toDataURL('image/png')
+      const a = document.createElement('a')
+      a.href = pngUrl
+      a.download = 'wolvercote.png'
+      a.click()
+    }
+    img.src = url
+  }
+
   const downloadWolv = () => {
     const blob = new Blob([text], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
@@ -96,6 +121,13 @@ export default function App() {
     a.download = 'wolvercote.txt'
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  const copyFormat = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    })
   }
 
   return (
@@ -138,7 +170,7 @@ export default function App() {
             className="import-toggle-btn"
             onClick={() => setShowImport((v) => !v)}
           >
-            {showImport ? 'Hide import' : '+ Import GenBank / GFF'}
+            {showImport ? '− Hide import' : '+ Import GenBank / GFF'}
           </button>
         </div>
 
@@ -168,7 +200,17 @@ export default function App() {
 
             {/* Wolvercote format string — always visible, always editable */}
             <div className="format-preview">
-              <div className="format-preview-label">Wolvercote format</div>
+              <div className="format-preview-header">
+                <div className="format-preview-label">Wolvercote format</div>
+                <button
+                  className="copy-btn"
+                  onClick={copyFormat}
+                  disabled={!text}
+                  title="Copy to clipboard"
+                >
+                  {copied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
               <textarea
                 className={`wolvercote-editor format-preview-textarea${!parsed.ok ? ' error' : ''}`}
                 value={text}
@@ -189,8 +231,11 @@ export default function App() {
               <button className="gx-btn gx-btn-secondary" onClick={downloadWolv} disabled={!text}>
                 Download .txt
               </button>
-              <button className="gx-btn gx-btn-primary" onClick={downloadSVG} disabled={!svgOutput}>
+              <button className="gx-btn gx-btn-secondary" onClick={downloadSVG} disabled={!svgOutput}>
                 Download SVG
+              </button>
+              <button className="gx-btn gx-btn-primary" onClick={downloadPNG} disabled={!svgOutput}>
+                Download PNG
               </button>
             </div>
           </div>

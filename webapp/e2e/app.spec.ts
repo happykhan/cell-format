@@ -169,7 +169,7 @@ test.describe('import section', () => {
     await page.goto('/')
     await page.getByRole('button', { name: '+ Import GenBank / GFF' }).click()
     await expect(page.locator('.upload-row')).toBeVisible()
-    await page.getByRole('button', { name: 'Hide import' }).click()
+    await page.getByRole('button', { name: '− Hide import' }).click()
     await expect(page.locator('.upload-row')).not.toBeVisible()
   })
 })
@@ -231,10 +231,23 @@ test.describe('builder colour feature', () => {
     expect(val).toContain('colour="#ff0000"')
   })
 
-  test('Other MGE type is available', async ({ page }) => {
+  test('Other MGE type is available when adding inside a plasmid', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.wolvercote-editor').fill('')
+    await page.getByRole('button', { name: '+ Add element' }).click()
+    await page.locator('.builder-modal-select').selectOption('plasmid')
+    await page.locator('.builder-modal-input').first().fill('pTest')
+    await page.getByRole('button', { name: 'Add', exact: true }).click()
+    await page.getByRole('button', { name: /Add inside pTest/ }).click()
+    await expect(page.locator('.builder-modal-select option[value="other"]')).toBeAttached()
+  })
+
+  test('top-level Add element only offers chromosome and plasmid', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '+ Add element' }).click()
-    await expect(page.locator('.builder-modal-select option[value="other"]')).toBeAttached()
+    await expect(page.locator('.builder-modal-select option[value="chromosome"]')).toBeAttached()
+    await expect(page.locator('.builder-modal-select option[value="plasmid"]')).toBeAttached()
+    await expect(page.locator('.builder-modal-select option[value="transposon"]')).not.toBeAttached()
   })
 })
 
