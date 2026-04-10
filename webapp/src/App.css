@@ -1,0 +1,137 @@
+/* ── App shell ───────────────────────────────── */
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Main ────────────────────────────────────── */
+.app-main {
+  flex: 1;
+  max-width: var(--gx-max-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 2rem 1rem;
+}
+
+/* ── Two-column layout ───────────────────────── */
+.editor-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .editor-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Panel ───────────────────────────────────── */
+.panel {
+  background: var(--gx-surface);
+  border: 1px solid var(--gx-border);
+  border-radius: var(--gx-radius-lg);
+  padding: 1.25rem;
+}
+
+.panel-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gx-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Wolvercote text editor ──────────────────── */
+.wolvercote-editor {
+  width: 100%;
+  min-height: 120px;
+  font-family: var(--gx-font-mono);
+  font-size: 0.9rem;
+  padding: 0.75rem;
+  background: var(--gx-bg);
+  color: var(--gx-text);
+  border: 1px solid var(--gx-border);
+  border-radius: var(--gx-radius);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.wolvercote-editor:focus {
+  border-color: var(--gx-accent);
+}
+
+.wolvercote-editor.error {
+  border-color: var(--gx-error, #e05252);
+}
+
+/* ── Error / validation ──────────────────────── */
+.validation-error {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: color-mix(in srgb, var(--gx-error, #e05252) 10%, transparent);
+  border-left: 3px solid var(--gx-error, #e05252);
+  border-radius: 0 var(--gx-radius) var(--gx-radius) 0;
+  font-size: 0.85rem;
+  color: var(--gx-error, #e05252);
+  font-family: var(--gx-font-mono);
+}
+
+/* ── SVG viewer ──────────────────────────────── */
+.svg-viewer {
+  width: 100%;
+  overflow: auto;
+  background: white;
+  border-radius: var(--gx-radius);
+  border: 1px solid var(--gx-border);
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svg-viewer svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Examples bar ────────────────────────────── */
+.examples-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.example-btn {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.65rem;
+  border: 1px solid var(--gx-border);
+  border-radius: var(--gx-radius);
+  background: var(--gx-surface);
+  color: var(--gx-text);
+  cursor: pointer;
+  font-family: var(--gx-font-mono);
+  transition: background 0.15s;
+}
+
+.example-btn:hover {
+  background: var(--gx-surface-hover, var(--gx-border));
+}
+
+/* ── File upload row ─────────────────────────── */
+.upload-row {
+  margin-bottom: 1.25rem;
+}
+
+/* ── Action buttons ──────────────────────────── */
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
