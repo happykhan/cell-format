@@ -120,12 +120,13 @@ function getAtPath(root: MGEItem[], path: MGEPath): MGEItem {
 
 // Modal identifies *where* to add or what to edit
 type ModalTarget =
-  | { kind: 'cell' }                                              // add chr or top-level MGE to cell
-  | { kind: 'chr'; chrIdx: number }                               // add MGE inside chromosome
-  | { kind: 'mge'; path: MGEPath }                               // add MGE inside a (nested) MGE
-  | { kind: 'edit-chr'; chrIdx: number }                         // edit a chromosome's label
-  | { kind: 'edit-chr-child'; chrIdx: number; childIdx: number } // edit a chromosome child MGE
-  | { kind: 'edit-mge'; path: MGEPath }                          // edit a top-level or nested MGE
+  | { kind: 'cell' }                                                        // add chr or top-level MGE to cell
+  | { kind: 'chr'; chrIdx: number }                                         // add MGE at root of chromosome
+  | { kind: 'chr-mge'; chrIdx: number; path: MGEPath }                      // add MGE inside a chr's MGE subtree
+  | { kind: 'mge'; path: MGEPath }                                          // add MGE inside a top-level MGE subtree
+  | { kind: 'edit-chr'; chrIdx: number }                                    // edit a chromosome's label
+  | { kind: 'edit-chr-mge'; chrIdx: number; path: MGEPath }                 // edit an MGE nested inside a chromosome
+  | { kind: 'edit-mge'; path: MGEPath }                                     // edit a top-level or nested MGE
 
 interface ModalState {
   cellIdx: number
@@ -179,9 +180,11 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
       const t = modal.target
       if (t.kind === 'edit-chr') {
         cell.chromosomes[t.chrIdx].label = label
-      } else if (t.kind === 'edit-chr-child') {
-        cell.chromosomes[t.chrIdx].mges[t.childIdx].label = label
-        cell.chromosomes[t.chrIdx].mges[t.childIdx].type = newType
+      } else if (t.kind === 'edit-chr-mge') {
+        const root = cell.chromosomes[t.chrIdx].mges
+        const item = t.path.length === 1 ? root[t.path[0]] : getAtPath(root, t.path)
+        item.label = label
+        item.type = newType
       } else if (t.kind === 'edit-mge') {
         const item = t.path.length === 1 ? cell.mges[t.path[0]] : getAtPath(cell.mges, t.path)
         item.label = label
@@ -197,6 +200,11 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
         }
       } else if (modal.target.kind === 'chr') {
         cell.chromosomes[modal.target.chrIdx].mges.push({ type: newType, label, mges: [] })
+      } else if (modal.target.kind === 'chr-mge') {
+        const { chrIdx, path } = modal.target
+        const root = cell.chromosomes[chrIdx].mges
+        const target = path.length === 1 ? root[path[0]] : getAtPath(root, path)
+        target.mges.push({ type: newType, label, mges: [] })
       } else if (modal.target.kind === 'mge') {
         const { path } = modal.target
         const root = cell.mges
@@ -235,13 +243,21 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     update(next)
   }
 
-  const removeChrMGE = (ci: number, chri: number, mgeIdx: number) => {
+  const removeChrNestedMGE = (ci: number, chrIdx: number, path: MGEPath) => {
     const next = JSON.parse(JSON.stringify(state)) as BuilderState
-    next.cells[ci].chromosomes[chri].mges.splice(mgeIdx, 1)
+    const root = next.cells[ci].chromosomes[chrIdx].mges
+    if (path.length === 1) {
+      root.splice(path[0], 1)
+    } else {
+      const parent = getAtPath(root, path.slice(0, -1))
+      parent.mges.splice(path[path.length - 1], 1)
+    }
     update(next)
   }
 
   const isChrEdit = modal?.target.kind === 'edit-chr'
+  // For chr-mge targets, treat nested additions like MGE (not chromosome)
+
   const typeOptions =
     modal?.target.kind === 'cell'
       ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage'] as ElementType[])
@@ -274,18 +290,28 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     )
   }
 
-  function renderChrMGEItem(ci: number, chri: number, mgeIdx: number, item: MGEItem) {
+  function renderChrMGEItem(ci: number, chrIdx: number, path: MGEPath, item: MGEItem) {
+    const colour = ELEMENT_COLOURS[item.type] || '#888'
     return (
-      <div key={mgeIdx} className="builder-nested">
-        {elementDot(item.type)}
+      <div key={path.join('-')} className="mge-card" style={{ borderLeftColor: colour }}>
+        <div className="mge-card-header">
+          {elementDot(item.type)}
+          <button
+            className="builder-label-btn mge-card-label"
+            onClick={() => openEdit(ci, { kind: 'edit-chr-mge', chrIdx, path }, item.label, item.type)}
+            title="Click to edit"
+          >
+            {item.label || `(${item.type})`}
+          </button>
+          <button className="builder-remove-btn" title="Remove" onClick={() => removeChrNestedMGE(ci, chrIdx, path)}>×</button>
+        </div>
+        {item.mges.map((child, ni) => renderChrMGEItem(ci, chrIdx, [...path, ni], child))}
         <button
-          className="builder-label-btn"
-          onClick={() => openEdit(ci, { kind: 'edit-chr-child', chrIdx: chri, childIdx: mgeIdx }, item.label, item.type)}
-          title="Click to edit"
+          className="mge-add-inside-btn"
+          onClick={() => openModal(ci, { kind: 'chr-mge', chrIdx, path })}
         >
-          {item.label || `(${item.type})`}
+          + Add inside {item.label || item.type}
         </button>
-        <button className="builder-remove-btn" onClick={() => removeChrMGE(ci, chri, mgeIdx)}>×</button>
       </div>
     )
   }
@@ -315,7 +341,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
                 </button>
                 <button className="builder-remove-btn" onClick={() => removeChromosome(ci, chri)}>×</button>
               </div>
-              {chr.mges.map((m, mi) => renderChrMGEItem(ci, chri, mi, m))}
+              {chr.mges.map((m, mi) => renderChrMGEItem(ci, chri, [mi], m))}
               <button
                 className="builder-add-nested-btn"
                 onClick={() => openModal(ci, { kind: 'chr', chrIdx: chri })}
