@@ -64,6 +64,91 @@
   font-size: 0.78rem;
 }
 
+.app-header-link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--gx-text-muted);
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.app-header-link-btn:hover {
+  color: var(--gx-accent);
+}
+
+/* ── About modal ─────────────────────────────── */
+.about-modal {
+  max-width: 480px;
+}
+
+.about-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.about-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.about-version {
+  font-size: 0.75rem;
+  color: var(--gx-text-muted);
+  font-family: var(--gx-font-mono);
+}
+
+.about-desc {
+  font-size: 0.88rem;
+  color: var(--gx-text-muted);
+  line-height: 1.55;
+  margin: 0 0 1rem;
+}
+
+.about-section {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gx-text-muted);
+  margin: 0.75rem 0 0.4rem;
+}
+
+.about-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.about-table td {
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--gx-border);
+}
+
+.about-table td:first-child {
+  font-family: var(--gx-font-mono);
+  white-space: nowrap;
+  color: var(--gx-accent);
+}
+
+.about-links {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.about-links a {
+  color: var(--gx-accent);
+  text-decoration: none;
+}
+
+.about-links a:hover {
+  text-decoration: underline;
+}
+
 /* ── Main ────────────────────────────────────── */
 .app-main {
   flex: 1;
