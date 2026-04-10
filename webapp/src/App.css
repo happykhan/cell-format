@@ -256,12 +256,33 @@
   padding: 2rem 2rem 1rem;
 }
 
+/* ── Format bar (full-width above panels) ────── */
+.format-bar {
+  margin-top: 1rem;
+}
+
+.format-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.format-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* ── Two-column layout ───────────────────────── */
 .editor-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 @media (max-width: 900px) {
@@ -285,13 +306,6 @@
   letter-spacing: 0.05em;
   color: var(--gx-text-muted);
   margin-bottom: 0.75rem;
-}
-
-/* ── Format preview (below builder) ─────────── */
-.format-preview {
-  margin-top: 1rem;
-  border-top: 1px solid var(--gx-border);
-  padding-top: 0.75rem;
 }
 
 .format-preview-header {
@@ -416,13 +430,6 @@
   margin-bottom: 1.25rem;
 }
 
-/* ── Action buttons ──────────────────────────── */
-.actions {
-  display: flex;
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-  flex-wrap: wrap;
-}
 
 /* ── Tabs ────────────────────────────────────── */
 .tabs {

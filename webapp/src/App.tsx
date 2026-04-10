@@ -188,46 +188,14 @@ export default function App() {
           </div>
         )}
 
-        <div className="editor-layout">
-          {/* Left: builder + live format string */}
-          <div className="panel">
-            <div className="panel-title">Interactive builder</div>
-            <InteractiveBuilder
-              onUpdate={handleBuilderUpdate}
-              syncFrom={parsed.ok ? parsed.value : null}
-              syncVersion={builderSyncVersion}
-            />
-
-            {/* Wolvercote format string — always visible, always editable */}
-            <div className="format-preview">
-              <div className="format-preview-header">
-                <div className="format-preview-label">Wolvercote format</div>
-                <button
-                  className="copy-btn"
-                  onClick={copyFormat}
-                  disabled={!text}
-                  title="Copy to clipboard"
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-              <textarea
-                className={`wolvercote-editor format-preview-textarea${!parsed.ok ? ' error' : ''}`}
-                value={text}
-                onChange={handleTextareaChange}
-                spellCheck={false}
-                placeholder="e.g. ()chr1,{}pBAD"
-                rows={2}
-              />
-              {!parsed.ok && (
-                <div className="validation-error">
-                  {parsed.error.message}
-                  {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
-                </div>
-              )}
-            </div>
-
-            <div className="actions">
+        {/* Format string — full width, above the two panels */}
+        <div className="format-bar panel">
+          <div className="format-bar-header">
+            <div className="format-preview-label">Wolvercote format</div>
+            <div className="format-bar-actions">
+              <button className="copy-btn" onClick={copyFormat} disabled={!text} title="Copy to clipboard">
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
               <button className="gx-btn gx-btn-secondary" onClick={downloadWolv} disabled={!text}>
                 Download .txt
               </button>
@@ -238,6 +206,32 @@ export default function App() {
                 Download PNG
               </button>
             </div>
+          </div>
+          <textarea
+            className={`wolvercote-editor format-preview-textarea${!parsed.ok ? ' error' : ''}`}
+            value={text}
+            onChange={handleTextareaChange}
+            spellCheck={false}
+            placeholder="e.g. ()chr1,{}pBAD"
+            rows={2}
+          />
+          {!parsed.ok && (
+            <div className="validation-error">
+              {parsed.error.message}
+              {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
+            </div>
+          )}
+        </div>
+
+        <div className="editor-layout">
+          {/* Left: builder */}
+          <div className="panel">
+            <div className="panel-title">Interactive builder</div>
+            <InteractiveBuilder
+              onUpdate={handleBuilderUpdate}
+              syncFrom={parsed.ok ? parsed.value : null}
+              syncVersion={builderSyncVersion}
+            />
           </div>
 
           {/* Right: SVG preview */}
