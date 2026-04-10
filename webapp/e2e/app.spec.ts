@@ -35,18 +35,16 @@ test.describe('page shell', () => {
   })
 })
 
-test.describe('text editor', () => {
+test.describe('format string / diagram', () => {
   test('shows SVG diagram for valid input', async ({ page }) => {
     await page.goto('/')
-    const textarea = page.locator('.wolvercote-editor')
-    await textarea.fill('()chr1')
+    await page.locator('.wolvercote-editor').fill('()chr1')
     await expect(page.locator('.svg-viewer circle')).toBeVisible()
   })
 
   test('shows validation error for invalid input', async ({ page }) => {
     await page.goto('/')
-    const textarea = page.locator('.wolvercote-editor')
-    await textarea.fill('(unclosed')
+    await page.locator('.wolvercote-editor').fill('(unclosed')
     await expect(page.locator('.validation-error')).toBeVisible()
   })
 
@@ -62,7 +60,6 @@ test.describe('text editor', () => {
     await page.getByRole('button', { name: 'Two cells' }).click()
     const val = await page.locator('.wolvercote-editor').inputValue()
     expect(val).toContain(';')
-    // Two-cell format should produce at least two circles
     const count = await page.locator('.svg-viewer circle').count()
     expect(count).toBeGreaterThanOrEqual(2)
   })
@@ -83,25 +80,20 @@ test.describe('text editor', () => {
 })
 
 test.describe('interactive builder', () => {
-  test('switching to builder tab shows the builder', async ({ page }) => {
+  test('builder is shown by default with format string below', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
     await expect(page.getByText('Cell 1')).toBeVisible()
     await expect(page.getByRole('button', { name: '+ Add element' })).toBeVisible()
+    await expect(page.locator('.wolvercote-editor')).toBeVisible()
   })
 
-  test('adding a chromosome updates the text editor', async ({ page }) => {
+  test('adding a chromosome updates the format string', async ({ page }) => {
     await page.goto('/')
-    // Start with blank text
     await page.locator('.wolvercote-editor').fill('')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
     await page.getByRole('button', { name: '+ Add element' }).click()
-    // Select Chromosome, type a label
     await page.locator('.builder-modal-select').selectOption('chromosome')
     await page.locator('.builder-modal-input').fill('myChromosome')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
-    // Switch back to text tab to verify
-    await page.getByRole('button', { name: 'Text editor' }).click()
     const val = await page.locator('.wolvercote-editor').inputValue()
     expect(val).toContain('myChromosome')
   })
@@ -109,7 +101,6 @@ test.describe('interactive builder', () => {
   test('adding a plasmid shows Add inside button', async ({ page }) => {
     await page.goto('/')
     await page.locator('.wolvercote-editor').fill('')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
     await page.getByRole('button', { name: '+ Add element' }).click()
     await page.locator('.builder-modal-select').selectOption('plasmid')
     await page.locator('.builder-modal-input').fill('pBAD')
@@ -120,30 +111,23 @@ test.describe('interactive builder', () => {
   test('can nest an element inside a plasmid', async ({ page }) => {
     await page.goto('/')
     await page.locator('.wolvercote-editor').fill('')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
-    // Add plasmid
     await page.getByRole('button', { name: '+ Add element' }).click()
     await page.locator('.builder-modal-select').selectOption('plasmid')
     await page.locator('.builder-modal-input').fill('pKpQIL')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
-    // Add transposon inside plasmid
     await page.getByRole('button', { name: /Add inside pKpQIL/ }).click()
     await page.locator('.builder-modal-select').selectOption('transposon')
     await page.locator('.builder-modal-input').fill('Tn4401')
     await page.getByRole('button', { name: 'Add', exact: true }).click()
-    // Verify nested element appears
     await expect(page.locator('.builder-label-btn').filter({ hasText: 'Tn4401' })).toBeVisible()
-    // Switch to text and verify Wolvercote string
-    await page.getByRole('button', { name: 'Text editor' }).click()
     const val = await page.locator('.wolvercote-editor').inputValue()
     expect(val).toContain('Tn4401')
     expect(val).toContain('pKpQIL')
   })
 
-  test('text → builder sync when switching tabs', async ({ page }) => {
+  test('typing in format string syncs to builder', async ({ page }) => {
     await page.goto('/')
     await page.locator('.wolvercote-editor').fill('()chromosome1,{}plasmidA')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
     await expect(page.locator('.builder-label-btn').filter({ hasText: 'chromosome1' })).toBeVisible()
     await expect(page.locator('.builder-label-btn').filter({ hasText: 'plasmidA' })).toBeVisible()
   })
@@ -151,7 +135,6 @@ test.describe('interactive builder', () => {
   test('clicking a label opens edit modal', async ({ page }) => {
     await page.goto('/')
     await page.locator('.wolvercote-editor').fill('()myChromosome')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
     await page.locator('.builder-label-btn').filter({ hasText: 'myChromosome' }).click()
     await expect(page.getByText('Edit element')).toBeVisible()
     await expect(page.locator('.builder-modal-input')).toHaveValue('myChromosome')
@@ -160,11 +143,9 @@ test.describe('interactive builder', () => {
   test('editing a label updates the format string', async ({ page }) => {
     await page.goto('/')
     await page.locator('.wolvercote-editor').fill('()oldName')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
     await page.locator('.builder-label-btn').filter({ hasText: 'oldName' }).click()
     await page.locator('.builder-modal-input').fill('newName')
     await page.getByRole('button', { name: 'Save' }).click()
-    await page.getByRole('button', { name: 'Text editor' }).click()
     const val = await page.locator('.wolvercote-editor').inputValue()
     expect(val).toContain('newName')
     expect(val).not.toContain('oldName')
@@ -172,7 +153,6 @@ test.describe('interactive builder', () => {
 
   test('can add a second cell', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('button', { name: 'Interactive builder' }).click()
     await page.getByRole('button', { name: '+ Add cell' }).click()
     await expect(page.getByText('Cell 2')).toBeVisible()
   })
@@ -182,7 +162,6 @@ test.describe('import tab', () => {
   test('import tab shows file upload widget', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: 'Import GenBank / GFF' }).click()
-    // FileUpload component should be visible
     await expect(page.locator('.upload-row')).toBeVisible()
   })
 })

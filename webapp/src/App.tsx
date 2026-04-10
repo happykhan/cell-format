@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { FileUpload } from '@genomicx/ui'
 import { parseWolvercote } from './wolvercote/parser'
@@ -18,17 +18,39 @@ const EXAMPLES = [
   { label: 'With attributes', value: '()chromosome[organism="E. coli", strain="K-12"]' },
 ]
 
-type Tab = 'text' | 'builder' | 'import'
+type Tab = 'builder' | 'import'
 
 export default function App() {
   const [text, setText] = useState(EXAMPLES[0].value)
   const [uploadFiles, setUploadFiles] = useState<File[]>([])
   const [uploadError, setUploadError] = useState('')
-  const [tab, setTab] = useState<Tab>('text')
+  const [tab, setTab] = useState<Tab>('builder')
   const [builderSyncVersion, setBuilderSyncVersion] = useState(0)
+  // Track whether the last text change came from the builder (to avoid sync loops)
+  const fromBuilder = useRef(false)
 
   const parsed = parseWolvercote(text)
   const svgOutput = parsed.ok ? renderSVG(parsed.value) : null
+
+  const handleBuilderUpdate = useCallback((wolvStr: string) => {
+    fromBuilder.current = true
+    setText(wolvStr)
+  }, [])
+
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    fromBuilder.current = false
+    const val = e.target.value
+    setText(val)
+    // Sync builder on valid parse, or reset it when textarea is cleared
+    const result = parseWolvercote(val)
+    if (result.ok || val.trim() === '') setBuilderSyncVersion((v) => v + 1)
+  }
+
+  const loadExample = (value: string) => {
+    fromBuilder.current = false
+    setText(value)
+    setBuilderSyncVersion((v) => v + 1)
+  }
 
   const handleFilesChange = useCallback((files: File[]) => {
     setUploadFiles(files)
@@ -48,7 +70,9 @@ export default function App() {
         setUploadError('No recognisable replicons found in this file. Check the file contains LOCUS records or ##sequence-region directives.')
         return
       }
+      fromBuilder.current = false
       setText(result.wolvercote)
+      setBuilderSyncVersion((v) => v + 1)
     }
     reader.readAsText(file)
   }, [])
@@ -100,16 +124,7 @@ export default function App() {
       <main className="app-main">
         {/* Tabs */}
         <div className="tabs">
-          <button className={`tab-btn${tab === 'text' ? ' active' : ''}`} onClick={() => setTab('text')}>
-            Text editor
-          </button>
-          <button
-            className={`tab-btn${tab === 'builder' ? ' active' : ''}`}
-            onClick={() => {
-              if (tab !== 'builder' && parsed.ok) setBuilderSyncVersion((v) => v + 1)
-              setTab('builder')
-            }}
-          >
+          <button className={`tab-btn${tab === 'builder' ? ' active' : ''}`} onClick={() => setTab('builder')}>
             Interactive builder
           </button>
           <button className={`tab-btn${tab === 'import' ? ' active' : ''}`} onClick={() => setTab('import')}>
@@ -117,15 +132,11 @@ export default function App() {
           </button>
         </div>
 
-        {/* Examples (shown for text tab) */}
-        {tab === 'text' && (
+        {/* Examples bar — always shown in builder tab */}
+        {tab === 'builder' && (
           <div className="examples-bar">
             {EXAMPLES.map((ex) => (
-              <button
-                key={ex.label}
-                className="example-btn"
-                onClick={() => setText(ex.value)}
-              >
+              <button key={ex.label} className="example-btn" onClick={() => loadExample(ex.value)}>
                 {ex.label}
               </button>
             ))}
@@ -148,35 +159,34 @@ export default function App() {
         )}
 
         <div className="editor-layout">
-          {/* Left: editor or builder */}
+          {/* Left: builder + live format string */}
           <div className="panel">
-            {tab === 'builder' ? (
-              <>
-                <div className="panel-title">Interactive builder</div>
-                <InteractiveBuilder
-                onUpdate={setText}
-                syncFrom={parsed.ok ? parsed.value : null}
-                syncVersion={builderSyncVersion}
+            <div className="panel-title">Interactive builder</div>
+            <InteractiveBuilder
+              onUpdate={handleBuilderUpdate}
+              syncFrom={parsed.ok ? parsed.value : null}
+              syncVersion={builderSyncVersion}
+            />
+
+            {/* Wolvercote format string — always visible, always editable */}
+            <div className="format-preview">
+              <div className="format-preview-label">Wolvercote format</div>
+              <textarea
+                className={`wolvercote-editor format-preview-textarea${!parsed.ok ? ' error' : ''}`}
+                value={text}
+                onChange={handleTextareaChange}
+                spellCheck={false}
+                placeholder="e.g. ()chr1,{}pBAD"
+                rows={2}
               />
-              </>
-            ) : (
-              <>
-                <div className="panel-title">Wolvercote format</div>
-                <textarea
-                  className={`wolvercote-editor${!parsed.ok ? ' error' : ''}`}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  spellCheck={false}
-                  placeholder="Enter Wolvercote format string, e.g. ()chr1,{}pBAD"
-                />
-                {!parsed.ok && (
-                  <div className="validation-error">
-                    {parsed.error.message}
-                    {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
-                  </div>
-                )}
-              </>
-            )}
+              {!parsed.ok && (
+                <div className="validation-error">
+                  {parsed.error.message}
+                  {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
+                </div>
+              )}
+            </div>
+
             <div className="actions">
               <button className="gx-btn gx-btn-secondary" onClick={downloadWolv} disabled={!text}>
                 Download .txt

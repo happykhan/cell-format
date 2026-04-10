@@ -237,6 +237,27 @@
   margin-bottom: 0.75rem;
 }
 
+/* ── Format preview (below builder) ─────────── */
+.format-preview {
+  margin-top: 1rem;
+  border-top: 1px solid var(--gx-border);
+  padding-top: 0.75rem;
+}
+
+.format-preview-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gx-text-muted);
+  margin-bottom: 0.4rem;
+}
+
+.format-preview-textarea {
+  min-height: unset !important;
+  resize: vertical;
+}
+
 /* ── Wolvercote text editor ──────────────────── */
 .wolvercote-editor {
   width: 100%;

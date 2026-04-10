@@ -147,8 +147,12 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
   const [newType, setNewType] = useState<ElementType>('chromosome')
 
   useEffect(() => {
-    if (!syncFrom) return
-    setState(cellSetToBuilderState(syncFrom))
+    if (syncFrom) {
+      setState(cellSetToBuilderState(syncFrom))
+    } else {
+      // syncVersion was incremented but parse is null → clear to empty
+      setState({ cells: [{ chromosomes: [], mges: [] }] })
+    }
   }, [syncVersion]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const update = (next: BuilderState) => {
