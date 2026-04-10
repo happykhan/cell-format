@@ -1,6 +1,6 @@
 {
   "name": "cell-format-webapp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Wolvercote format visualiser — parse bacterial genome organisation strings and render SVG diagrams",
   "type": "module",
   "license": "MIT",

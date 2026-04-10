@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react'
 import type { CellSet, ChromosomeNode, MGENode } from '../wolvercote/types'
 
-type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'other'
+type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'gene' | 'other'
 
 const ELEMENT_LABELS: Record<ElementType, string> = {
   chromosome: 'Chromosome',
@@ -15,6 +15,7 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
   integron: 'Integron',
   insertion_sequence: 'Insertion sequence',
   phage: 'Prophage',
+  gene: 'Gene',
   other: 'Other',
 }
 
@@ -25,6 +26,7 @@ const DEFAULT_COLOURS: Record<string, string> = {
   integron: '#9b59b6',
   insertion_sequence: '#f39c12',
   phage: '#16a085',
+  gene: '#c0392b',
   other: '#888888',
 }
 
@@ -68,7 +70,15 @@ interface BuilderState {
 function mgeItemStr(m: MGEItem): string {
   const inner = m.mges.map(mgeItemStr).join(', ')
   const defaultCol = DEFAULT_COLOURS[m.type] || '#888'
-  const attrs = m.colour && m.colour !== defaultCol ? `[colour="${m.colour}"]` : ''
+  const attrParts: string[] = []
+  // Encode type when it can't be reliably inferred from the label alone
+  if (m.type !== 'plasmid' && m.type !== mgeTypeFromLabel(m.label)) {
+    attrParts.push(`type="${m.type}"`)
+  }
+  if (m.colour && m.colour !== defaultCol) {
+    attrParts.push(`colour="${m.colour}"`)
+  }
+  const attrs = attrParts.length ? `[${attrParts.join(', ')}]` : ''
   return `{${inner}}${m.label}${attrs}`
 }
 
@@ -98,7 +108,7 @@ function mgeTypeFromLabel(label: string): ElementType {
 }
 
 function mgeNodeToItem(m: MGENode): MGEItem {
-  const type = mgeTypeFromLabel(m.label)
+  const type = (m.attributes.type as ElementType) || mgeTypeFromLabel(m.label)
   const colour = m.attributes.colour || undefined
   return {
     type,
@@ -279,8 +289,8 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
   const typeOptions =
     modal?.target.kind === 'cell'
-      ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage', 'other'] as ElementType[])
-      : (['transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid', 'other'] as ElementType[])
+      ? (['chromosome', 'plasmid', 'transposon', 'integron', 'insertion_sequence', 'phage', 'gene', 'other'] as ElementType[])
+      : (['gene', 'transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid', 'other'] as ElementType[])
 
   function renderMGEItem(ci: number, path: MGEPath, item: MGEItem, depth: number) {
     const colour = resolveColour(item.type, item.colour)

@@ -35,104 +35,89 @@ export default function About() {
         <div className="about-page-inner">
           <h1 className="about-page-title">About Wolvercote</h1>
           <p className="about-page-lead">
-            A compact, human- and machine-readable notation for describing the genomic organisation
-            of bacterial cells — chromosomes, plasmids, and nested mobile genetic elements — inspired
-            by the Newick format for phylogenetic trees.
+            Bacterial genomes are not just chromosomes. A typical clinical isolate carries
+            a chromosome plus a handful of plasmids, each of which may harbour transposons,
+            integrons, or resistance genes nested inside one another. Standard formats like
+            GenBank and GFF describe sequences well — but they say nothing about how those
+            replicons relate to each other inside a cell.
+          </p>
+          <p className="about-page-lead">
+            Wolvercote is a compact, human-readable notation that fills that gap. Inspired
+            by the Newick format for phylogenetic trees, it encodes the complete genomic
+            organisation of a bacterial cell — chromosomes, plasmids, and arbitrarily nested
+            mobile genetic elements — in a single line of text.
           </p>
 
-          <h2>Abstract</h2>
+          <h2>The notation at a glance</h2>
           <p>
-            Understanding the genomic composition of bacterial cells is central to decoding mechanisms
-            of evolution, adaptation, and pathogenicity. In bacteria, the diversity and structural
-            complexity of mobile genetic elements (MGEs) — including plasmids, transposons, integrons,
-            and bacteriophages — pose enduring challenges for data representation and comparative analysis.
+            Parentheses <code>()</code> mark a chromosome; curly braces <code>{'{}'}</code> mark a plasmid or
+            MGE. Nesting them shows what lives inside what. A comma separates replicons
+            in the same cell; a semicolon separates different cells.
           </p>
-          <p>
-            The Wolvercote format is a novel, human- and machine-readable framework designed to
-            comprehensively describe the genetic content of individual bacterial cells. It integrates
-            chromosomal and non-chromosomal components, together with metadata such as annotations,
-            host information, and mobility characteristics, within a unified, hierarchical structure.
-          </p>
-          <p>
-            Its utility has been demonstrated through a case study on <em>Klebsiella pneumoniae</em> genomes,
-            showing how it captures intricate MGE arrangements, supports detection of potential horizontal
-            gene transfer events, and enables direct comparison of genomic architectures across isolates.
-          </p>
-
-          <h2>Background</h2>
-          <p>
-            Whole-genome sequencing has become a cornerstone of microbial genomics, enabling the
-            investigation of evolution, adaptation, and transmission in unprecedented detail. Long-read
-            sequencing technologies generate high-quality, complete bacterial genomes that include both
-            chromosomal and MGE content.
-          </p>
-          <p>
-            Traditional formats — such as GenBank, GFF, or assembly graphs — describe sequences and
-            features effectively but do not explicitly capture the within-cell relationships between
-            chromosomes and accessory elements. This limits the ability to model and share the full
-            genomic composition of individual cells, especially when MGEs are nested or interact
-            dynamically through horizontal gene transfer.
-          </p>
-          <p>
-            Wolvercote addresses this by providing a flexible, recursive grammar that unifies
-            chromosomal and non-chromosomal entities within a single syntactic framework, while
-            allowing metadata annotation at any level.
-          </p>
-
-          <h2>Format syntax</h2>
           <table className="about-table">
             <tbody>
-              <tr><td><code>()label</code></td><td>Chromosome</td></tr>
-              <tr><td><code>{'{}'}label</code></td><td>Plasmid / mobile genetic element</td></tr>
-              <tr><td><code>({}Tn3)chr</code></td><td>Transposon on chromosome</td></tr>
-              <tr><td><code>{'{ {}blaKPC }plas'}</code></td><td>Resistance gene nested inside plasmid</td></tr>
-              <tr><td><code>A , B</code></td><td>Two replicons in the same cell</td></tr>
-              <tr><td><code>A ; B</code></td><td>Two separate cells</td></tr>
-              <tr><td><code>[key="value"]</code></td><td>Attribute annotation on any element</td></tr>
+              <tr>
+                <td><code>()chr1</code></td>
+                <td>A chromosome labelled <em>chr1</em></td>
+              </tr>
+              <tr>
+                <td><code>()chr1, {'{}'}pBAD</code></td>
+                <td>Chromosome plus a plasmid in the same cell</td>
+              </tr>
+              <tr>
+                <td><code>{'{ {}blaKPC-3 }pKpQIL'}</code></td>
+                <td>Resistance gene <em>blaKPC-3</em> nested inside plasmid <em>pKpQIL</em></td>
+              </tr>
+              <tr>
+                <td><code>{'{ { {}blaKPC-3 }Tn4401 }pKpQIL'}</code></td>
+                <td>KPC gene inside a transposon inside a plasmid — three levels deep</td>
+              </tr>
+              <tr>
+                <td><code>A ; B</code></td>
+                <td>Two cells, e.g. from a metagenomics sample</td>
+              </tr>
+              <tr>
+                <td><code>[key="value"]</code></td>
+                <td>Metadata annotation on any element</td>
+              </tr>
             </tbody>
           </table>
 
-          <h2>Grammar</h2>
-          <p>The formal grammar allows infinite nesting of MGEs within other MGEs, reflecting real biological complexity:</p>
-          <pre className="about-grammar">{`CellSet    → Cell (';' Cell)*
-Cell       → Replicon (',' Replicon)*
-Chromosome → '(' MGE* ')' Label Attrs?
-MGE        → '{' MGE* '}' Label Attrs?
-Attrs      → '[' Key '=' '"' Value '"' (',' ...)* ']'`}</pre>
-          <p>Example encoding a <em>K. pneumoniae</em> chromosome carrying a conjugative plasmid:</p>
-          <pre className="about-grammar">{`({{} pCTX-M [type="plasmid", mobility="conjugative"]} chromosome [host="Klebsiella pneumoniae"])`}</pre>
-
-          <h2>Key features</h2>
-          <ul className="about-feature-list">
-            <li><strong>Within-cell linkage</strong> — chromosomes and plasmids are no longer treated as separate entities but as interdependent elements of a cellular system.</li>
-            <li><strong>Recursive nesting</strong> — any MGE can contain other MGEs, faithfully representing transposons inside plasmids, resistance cassettes inside integrons, and so on.</li>
-            <li><strong>Rich metadata</strong> — key-value attributes can capture resistance genes, host, mobility, source, and any other contextual information.</li>
-            <li><strong>Lightweight and interoperable</strong> — plain text that parses to JSON; compatible with GenBank/GFF3 import and SVG export.</li>
-            <li><strong>Multi-cell support</strong> — cells separated by <code>;</code> enable representation of metagenomics samples or co-cultures.</li>
-          </ul>
-
-          <h2>Case study: <em>Klebsiella pneumoniae</em></h2>
+          <h2>Why it matters</h2>
           <p>
-            Applied to 50 complete <em>K. pneumoniae</em> genomes, Wolvercote-encoded representations enabled:
+            Mobile genetic elements are the main vehicle for spread of antimicrobial
+            resistance. Understanding <em>where</em> a resistance gene sits — on a conjugative
+            plasmid, inside a transposon, or integrated into the chromosome — is just as
+            important as knowing the gene is there. Wolvercote makes that structure explicit
+            and comparable across isolates without requiring large intermediate files or
+            bespoke graph databases.
           </p>
-          <ul className="about-feature-list">
-            <li>automated extraction of shared MGEs across isolates,</li>
-            <li>identification of potential horizontal gene transfer events, and</li>
-            <li>clustering of strains based on full cell composition rather than sequence identity alone.</li>
-          </ul>
           <p>
-            These analyses revealed a compact yet expressive encoding, allowing rich comparative analyses
-            without reliance on large intermediate files or bespoke graph structures.
+            The recursive grammar allows structures of any depth. A single Wolvercote string
+            can capture, for example, a <em>Klebsiella pneumoniae</em> chromosome carrying the
+            <em>blaKPC-3</em> gene nested inside transposon Tn4401 inside the IncFII/IncR
+            plasmid pKpQIL — exactly the arrangement seen in KPC-producing outbreak strains.
           </p>
 
-          <h2>Authors</h2>
+          <h2>This tool</h2>
+          <p>
+            This web application lets you build and visualise Wolvercote strings interactively.
+            Use the builder to add chromosomes, plasmids, and nested MGEs by clicking, or type
+            the format string directly. You can also import a GenBank or GFF3 file to auto-generate
+            a starting string from an existing assembly. The diagram preview updates live.
+          </p>
+          <p>
+            Strings and SVG diagrams can be downloaded for use in presentations or manuscripts.
+          </p>
+
+          <h2>Team</h2>
           <p>
             Developed at the{' '}
             <a href="https://www.pathogensurveillance.net" target="_blank" rel="noreferrer">
               Centre for Genomic Pathogen Surveillance
             </a>
-            , Pandemic Sciences Institute, University of Oxford, in collaboration with the WHO
-            Collaborating Centre on Genomic Surveillance of AMR and the NIHR Global Health Research Unit.
+            , Pandemic Sciences Institute, University of Oxford — part of the WHO Collaborating
+            Centre on Genomic Surveillance of AMR and the NIHR Global Health Research Unit.
           </p>
           <ul className="about-authors">
             <li>Julio Diaz Caballero</li>

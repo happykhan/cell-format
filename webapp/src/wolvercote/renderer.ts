@@ -25,8 +25,19 @@ const ARC_BAND_MGE = 10   // radial thickness of the outermost arc band on MGE c
 const ARC_TAPER = 0.85    // each deeper nesting level is this fraction narrower
 const ARC_HALF = 0.28     // half-width of each depth-0 arc marker (radians ≈ 16°)
 
-function elementColour(label: string, index: number, customColour?: string): string {
+const TYPE_COLOURS: Record<string, string> = {
+  transposon: '#e05252',
+  integron: '#9b59b6',
+  insertion_sequence: '#f39c12',
+  phage: '#f39c12',
+  gene: '#c0392b',
+  plasmid: MGE_STROKE,
+  other: '#888888',
+}
+
+function elementColour(label: string, index: number, customColour?: string, type?: string): string {
   if (customColour) return customColour
+  if (type && TYPE_COLOURS[type]) return TYPE_COLOURS[type]
   const l = label.toLowerCase()
   if (l.includes('transposon') || l.startsWith('tn')) return '#e05252'
   if (l.includes('integron') || l.startsWith('int')) return '#9b59b6'
@@ -137,11 +148,12 @@ function renderNestedArcs(
     const ea0 = a0 + i * (arcSpan + gap)
     const ea1 = ea0 + arcSpan
     const mid = (ea0 + ea1) / 2
-    const colour = elementColour(el.label, i + depth * 7, el.attributes.colour)
+    const colour = elementColour(el.label, i + depth * 7, el.attributes.colour, el.attributes.type)
     svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
 
     if (el.label && arcSpan > 0.18) {
-      const labelR = outerR + 10
+      // Push labels further out per depth level so radially-stacked labels don't collide
+      const labelR = outerR + 10 + depth * 14
       const lx = cx + labelR * Math.cos(mid)
       const ly = cy + labelR * Math.sin(mid) + 4
       svg.text(lx, ly, el.label, 10, arcAnchor(mid), '#555')
@@ -174,7 +186,7 @@ function renderArcs(
     const center = startAngle + (2 * Math.PI * i) / n
     const a0 = center - halfSpan
     const a1 = center + halfSpan
-    const colour = elementColour(el.label, i, el.attributes.colour)
+    const colour = elementColour(el.label, i, el.attributes.colour, el.attributes.type)
 
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
@@ -197,7 +209,7 @@ function measureCell(cell: Cell): [number, number] {
   const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
 
   const chrColW = CHR_R * 2 + PAD * 2 + 80   // +80 for outward arc bands + labels
-  const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + 50 : 0
+  const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + 90 : 0  // +90 for nested arc bands + labels
   const width = chrColW + mgeColW + PAD
 
   const chrColH = Math.max(chrs.length, 1) * (CHR_R * 2 + PAD + 160) + PAD + 30

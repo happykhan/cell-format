@@ -239,20 +239,19 @@ test.describe('builder colour feature', () => {
 })
 
 test.describe('about page content', () => {
-  test('About page shows abstract content', async ({ page }) => {
+  test('About page shows lead paragraph', async ({ page }) => {
     await page.goto('/about')
-    await expect(page.getByRole('heading', { name: 'Abstract' })).toBeVisible()
-    await expect(page.locator('.about-page-lead')).toBeVisible()
+    await expect(page.locator('.about-page-lead').first()).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'The notation at a glance' })).toBeVisible()
   })
 
-  test('About page shows grammar section', async ({ page }) => {
+  test('About page shows notation table', async ({ page }) => {
     await page.goto('/about')
-    await expect(page.getByRole('heading', { name: 'Grammar' })).toBeVisible()
+    await expect(page.locator('.about-table')).toBeVisible()
   })
 
-  test('About page shows key features', async ({ page }) => {
+  test('About page shows why it matters section', async ({ page }) => {
     await page.goto('/about')
-    await expect(page.getByText('Key features')).toBeVisible()
-    await expect(page.getByText('Within-cell linkage')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Why it matters' })).toBeVisible()
   })
 })
