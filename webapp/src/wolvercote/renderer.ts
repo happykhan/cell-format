@@ -20,8 +20,8 @@ const MGE_R = 44
 const PAD = 24
 const FONT = 'Inter, Arial, sans-serif'
 
-const ARC_BAND_CHR = 18   // radial thickness per nesting level on chromosomes
-const ARC_BAND_MGE = 10   // radial thickness per nesting level on MGE circles
+const ARC_BAND_CHR = 11   // radial thickness per nesting level on chromosomes
+const ARC_BAND_MGE = 7    // radial thickness per nesting level on MGE circles
 const ARC_HALF = 0.28     // half-width of each depth-0 arc marker (radians ≈ 16°)
 
 function elementColour(label: string, index: number): string {
@@ -104,20 +104,20 @@ class SVGBuilder {
 }
 
 /**
- * Render elements inside a nested angular range [a0..a1] as arc bands.
- * Children subdivide the parent range; each level goes one band inward.
+ * Render child elements within a parent arc range [a0..a1], radiating outward.
+ * Each nesting level adds one band further out from the circle.
  */
 function renderNestedArcs(
   elements: MGENode[],
   cx: number, cy: number,
-  outerR: number, bandW: number,
+  innerR: number, bandW: number,
   a0: number, a1: number,
   svg: SVGBuilder,
   depth: number,
 ): void {
   const n = elements.length
-  if (!n || outerR - bandW < 4) return
-  const innerR = outerR - bandW
+  if (!n) return
+  const outerR = innerR + bandW
   const span = a1 - a0
   const gap = 0.025
   const arcSpan = Math.max(0.01, (span - gap * n) / n)
@@ -128,27 +128,29 @@ function renderNestedArcs(
     const colour = elementColour(el.label, i + depth * 7)
     svg.arc(cx, cy, outerR, innerR, ea0, ea1, colour, 'white', 0.5)
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, innerR, bandW, ea0, ea1, svg, depth + 1)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW, ea0, ea1, svg, depth + 1)
     }
   })
 }
 
 /**
- * Render top-level elements as fixed-width arc markers evenly distributed around
- * the circle, then recurse into children with renderNestedArcs.
- * Labels are placed outside the circle at each arc's position.
+ * Render top-level elements as fixed-width arc markers sitting on the circle
+ * edge (innerR = baseR), radiating outward. Children use renderNestedArcs to
+ * add further outward bands within the parent's angular slice.
+ * Labels alternate between two offsets to reduce collisions.
  */
 function renderArcs(
   elements: MGENode[],
   cx: number, cy: number,
-  outerR: number, bandW: number,
+  baseR: number, bandW: number,
   svg: SVGBuilder,
 ): void {
   const n = elements.length
-  if (!n || outerR - bandW < 4) return
-  const innerR = outerR - bandW
+  if (!n) return
+  const innerR = baseR
+  const outerR = baseR + bandW
 
-  // Cap half-span so arcs don't overlap when there are many elements
+  // Cap half-span so adjacent markers don't overlap for large n
   const halfSpan = Math.min(ARC_HALF, Math.PI / n - 0.04)
 
   elements.forEach((el, i) => {
@@ -160,13 +162,15 @@ function renderArcs(
     svg.arc(cx, cy, outerR, innerR, a0, a1, colour, 'white', 0.5)
 
     if (el.label) {
-      const lx = cx + (outerR + 16) * Math.cos(center)
-      const ly = cy + (outerR + 16) * Math.sin(center)
+      // Alternate label radius to reduce collision between adjacent elements
+      const labelR = outerR + 8 + (i % 2) * 10
+      const lx = cx + labelR * Math.cos(center)
+      const ly = cy + labelR * Math.sin(center)
       svg.text(lx, ly + 4, el.label, 11, 'middle', '#444')
     }
 
     if (el.children.length) {
-      renderNestedArcs(el.children, cx, cy, innerR, bandW, a0, a1, svg, 1)
+      renderNestedArcs(el.children, cx, cy, outerR, bandW, a0, a1, svg, 1)
     }
   })
 }
@@ -175,7 +179,7 @@ function measureCell(cell: Cell): [number, number] {
   const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
   const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
 
-  const chrColW = CHR_R * 2 + PAD * 2 + 40   // +40 for arc element labels outside circle
+  const chrColW = CHR_R * 2 + PAD * 2 + 80   // +80 for outward arc bands + labels
   const mgeColW = mges.length ? MGE_R * 2 + PAD * 2 + 50 : 0
   const width = chrColW + mgeColW + PAD
 
@@ -196,7 +200,7 @@ function renderCell(cell: Cell, ox: number, oy: number, height: number, svg: SVG
     const totalH = chrs.length * CHR_R * 2 + (chrs.length - 1) * PAD
     const startY = oy + (height - totalH) / 2
     chrs.forEach((ch, i) => {
-      const cx = ox + CHR_R + PAD + 20   // shift right to give room for left-side arc labels
+      const cx = ox + chrColW / 2        // centred so arcs have equal space on both sides
       const cy = startY + i * (CHR_R * 2 + PAD) + CHR_R
       svg.circle(cx, cy, CHR_R, CHR_FILL, CHR_STROKE, CHR_SW)
       renderArcs(ch.children, cx, cy, CHR_R, ARC_BAND_CHR, svg)
