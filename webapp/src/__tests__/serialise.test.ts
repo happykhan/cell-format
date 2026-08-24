@@ -22,14 +22,14 @@ describe('toCellGen', () => {
     expect(out).toContain('{}pBAD')
   })
 
-  it('preserves nested MGEs inside chromosome', () => {
+  it('preserves nested entities inside chromosome', () => {
     const out = roundTrip('({}Tn3)chromosome')
     expect(out).toContain('{}Tn3')
     expect(out).toContain('(')
     expect(out).toContain('chromosome')
   })
 
-  it('preserves deeply nested MGEs', () => {
+  it('preserves deeply nested entities', () => {
     const out = roundTrip('{ { {}blaKPC-2 }Tn4401 }pKpQIL')
     expect(out).toContain('blaKPC-2')
     expect(out).toContain('Tn4401')

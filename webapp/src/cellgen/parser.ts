@@ -3,16 +3,16 @@
  *
  * Grammar:
  *   CellSet     → Cell (';' Cell)*
- *   Cell        → Replicon (',' Replicon)*
- *   Replicon    → Chromosome | MGE
- *   Chromosome  → '(' MGE* ')' Label AttributeSet?
- *   MGE         → '{' MGE* '}' Label AttributeSet?  |  empty
+ *   Cell        → CellularElement (',' CellularElement)*
+ *   CellularElement → Chromosome | Entity
+ *   Chromosome  → '(' Entity* ')' Label AttributeSet?
+ *   Entity      → '{' Entity* '}' Label AttributeSet?  |  empty
  *   Label       → string (letters, digits, underscore, hyphen, dot, space) | empty
  *   AttributeSet→ '[' KeyValue (',' KeyValue)* ']'
  *   KeyValue    → Key '=' '"' Value '"'
  */
 
-import type { Attributes, Cell, CellSet, ChromosomeNode, MGENode, ParseResult } from './types'
+import type { Attributes, Cell, CellSet, ChromosomeNode, EntityNode, ParseResult } from './types'
 
 class Parser {
   private input: string
@@ -80,23 +80,23 @@ class Parser {
     return { replicons }
   }
 
-  private parseReplicon(): ChromosomeNode | MGENode {
+  private parseReplicon(): ChromosomeNode | EntityNode {
     const next = this.peek()
     if (next === '(') {
       return this.parseChromosome()
     } else if (next === '{') {
-      return this.parseMGE()
+      return this.parseEntity()
     } else {
-      throw this.error(`Expected '(' for chromosome or '{' for MGE but found '${next || 'end of input'}'`)
+      throw this.error(`Expected '(' for chromosome or '{' for entity but found '${next || 'end of input'}'`)
     }
   }
 
   private parseChromosome(): ChromosomeNode {
     this.expect('(')
-    const children: MGENode[] = []
+    const children: EntityNode[] = []
     while (this.peek() !== ')') {
       if (this.peek() === '') throw this.error("Unclosed '(' — missing ')'")
-      children.push(this.parseMGE())
+      children.push(this.parseEntity())
       if (this.peek() === ',') this.consume()
     }
     this.expect(')')
@@ -105,18 +105,18 @@ class Parser {
     return { kind: 'chromosome', label, children, attributes }
   }
 
-  private parseMGE(): MGENode {
+  private parseEntity(): EntityNode {
     this.expect('{')
-    const children: MGENode[] = []
+    const children: EntityNode[] = []
     while (this.peek() !== '}') {
       if (this.peek() === '') throw this.error("Unclosed '{' — missing '}'")
-      children.push(this.parseMGE())
+      children.push(this.parseEntity())
       if (this.peek() === ',') this.consume()
     }
     this.expect('}')
     const label = this.parseLabel()
     const attributes = this.parseAttributes()
-    return { kind: 'mge', label, children, attributes }
+    return { kind: 'entity', label, children, attributes }
   }
 
   private parseLabel(): string {

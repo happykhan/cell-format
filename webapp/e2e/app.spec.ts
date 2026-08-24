@@ -206,10 +206,22 @@ test.describe('Klebsiella examples', () => {
     expect(circles).toBeGreaterThanOrEqual(2) // chromosome + plasmids
     await expect(page.locator('.validation-error')).not.toBeVisible()
   })
+
+  test('fungal Starship example loads its nested captain and cargo', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Fungal Starship (schematic)' }).click()
+    const val = await page.locator('.cellgen-editor').inputValue()
+    expect(val).toContain('Starship[type="starship"')
+    expect(val).toContain('DUF3435_captain')
+    expect(val).toContain('cargo_gene_cluster')
+    expect(val).toContain('Macrophomina phaseolina')
+    await expect(page.locator('.svg-viewer svg')).toBeVisible()
+    await expect(page.locator('.validation-error')).not.toBeVisible()
+  })
 })
 
 test.describe('builder colour feature', () => {
-  test('colour picker is shown in add modal for MGE types', async ({ page }) => {
+  test('colour picker is shown in add modal for entity types', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '+ Add element' }).click()
     await page.locator('.builder-modal-select').selectOption('plasmid')
@@ -242,12 +254,13 @@ test.describe('builder colour feature', () => {
     await expect(page.locator('.builder-modal-select option[value="element"]')).toBeAttached()
   })
 
-  test('top-level Add element only offers chromosome and plasmid', async ({ page }) => {
+  test('top-level Add element offers chromosome and non-chromosomal entity types', async ({ page }) => {
     await page.goto('/')
     await page.getByRole('button', { name: '+ Add element' }).click()
     await expect(page.locator('.builder-modal-select option[value="chromosome"]')).toBeAttached()
     await expect(page.locator('.builder-modal-select option[value="plasmid"]')).toBeAttached()
-    await expect(page.locator('.builder-modal-select option[value="transposon"]')).not.toBeAttached()
+    await expect(page.locator('.builder-modal-select option[value="transposon"]')).toBeAttached()
+    await expect(page.locator('.builder-modal-select option[value="starship"]')).toBeAttached()
   })
 })
 

@@ -3,7 +3,7 @@ Serialise a CellSet back to a CellGen format string.
 """
 
 from __future__ import annotations
-from .types import Cell, CellSet, ChromosomeNode, MGENode, Replicon
+from .types import Cell, CellSet, CellularElement, ChromosomeNode, EntityNode
 
 
 def to_cellgen(cell_set: CellSet) -> str:
@@ -15,17 +15,17 @@ def _cell_str(cell: Cell) -> str:
     return ", ".join(_replicon_str(r) for r in cell.replicons)
 
 
-def _replicon_str(r: Replicon) -> str:
+def _replicon_str(r: CellularElement) -> str:
     if isinstance(r, ChromosomeNode):
-        inner = ", ".join(_mge_str(m) for m in r.children)
+        inner = ", ".join(_entity_str(m) for m in r.children)
         attrs = _attrs_str(r.attributes)
         return f"({inner}){r.label}{attrs}"
     else:
-        return _mge_str(r)
+        return _entity_str(r)
 
 
-def _mge_str(m: MGENode) -> str:
-    inner = ", ".join(_mge_str(c) for c in m.children)
+def _entity_str(m: EntityNode) -> str:
+    inner = ", ".join(_entity_str(c) for c in m.children)
     attrs = _attrs_str(m.attributes)
     return f"{{{inner}}}{m.label}{attrs}"
 

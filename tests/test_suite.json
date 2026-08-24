@@ -5,7 +5,7 @@
     {
       "id": "empty_chromosome",
       "input": "()",
-      "description": "Minimal chromosome with no label and no MGEs",
+      "description": "Minimal chromosome with no label and no contained entities",
       "expected": {
         "cells": 1,
         "replicons_in_cell_0": 1,
@@ -24,12 +24,12 @@
       }
     },
     {
-      "id": "mge_only",
+      "id": "entity_only",
       "input": "{}pBAD",
-      "description": "Single MGE (plasmid) with no chromosome",
+      "description": "Single non-chromosomal entity (a plasmid) with no chromosome",
       "expected": {
         "cells": 1,
-        "cell_0_replicon_0_type": "mge",
+        "cell_0_replicon_0_type": "entity",
         "cell_0_replicon_0_label": "pBAD"
       }
     },
@@ -41,7 +41,7 @@
         "cells": 1,
         "replicons_in_cell_0": 2,
         "cell_0_replicon_0_type": "chromosome",
-        "cell_0_replicon_1_type": "mge"
+        "cell_0_replicon_1_type": "entity"
       }
     },
     {
@@ -65,7 +65,7 @@
       }
     },
     {
-      "id": "plasmid_with_multiple_mges",
+      "id": "plasmid_with_multiple_entities",
       "input": "{ {}integronA }plasmid1, { {}integronA }plasmid2",
       "description": "Example 4: two plasmids each carrying identical integrons",
       "expected": {
@@ -121,9 +121,9 @@
       }
     },
     {
-      "id": "empty_mge",
+      "id": "empty_entity",
       "input": "{}",
-      "description": "Empty MGE with no label",
+      "description": "Empty entity with no label",
       "expected": {
         "cells": 1,
         "cell_0_replicon_0_label": ""
@@ -148,6 +148,16 @@
       }
     },
     {
+      "id": "fungal_starship_with_nested_genes",
+      "input": "({ {}DUF3435_captain[type=\"gene\", role=\"captain\"], {}cargo_gene_cluster[type=\"gene_cluster\", role=\"cargo\"] }Starship[type=\"starship\", representation=\"schematic\"])chromosome[organism=\"Macrophomina phaseolina\"]",
+      "description": "Schematic fungal chromosome containing a Starship with captain and cargo entities",
+      "expected": {
+        "cells": 1,
+        "cell_0_replicon_0_type": "chromosome",
+        "cell_0_replicon_0_children": 1
+      }
+    },
+    {
       "id": "label_with_hyphens_and_dots",
       "input": "()E.coli-K12, {}pOXA-48",
       "description": "Labels may contain dots and hyphens",
@@ -164,9 +174,9 @@
       "description": "Missing closing ')' for chromosome"
     },
     {
-      "id": "unclosed_mge",
+      "id": "unclosed_entity",
       "input": "{pBAD",
-      "description": "Missing closing '}' for MGE"
+      "description": "Missing closing '}' for entity"
     },
     {
       "id": "unclosed_attributes",

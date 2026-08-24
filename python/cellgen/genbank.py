@@ -15,7 +15,7 @@ Usage:
 from __future__ import annotations
 import re
 from pathlib import Path
-from .types import Attributes, Cell, CellSet, ChromosomeNode, MGENode, Replicon
+from .types import Attributes, Cell, CellSet, CellularElement, ChromosomeNode, EntityNode
 
 # Feature types considered MGEs
 _MGE_FEATURE_TYPES = {
@@ -49,7 +49,7 @@ def from_genbank_file(path: str | Path) -> CellSet:
     except ImportError as e:
         raise ImportError("BioPython is required for GenBank parsing: pip install biopython") from e
 
-    replicons: list[Replicon] = []
+    replicons: list[CellularElement] = []
     for record in SeqIO.parse(str(path), "genbank"):
         rep_type = _classify_gb_record(record)
         mges = _extract_gb_mges(record)
@@ -59,7 +59,7 @@ def from_genbank_file(path: str | Path) -> CellSet:
         if rep_type == "chromosome":
             replicons.append(ChromosomeNode(label=label, children=mges, size_bp=size))
         else:
-            replicons.append(MGENode(label=label, children=mges, size_bp=size))
+            replicons.append(EntityNode(label=label, children=mges, size_bp=size))
 
     return CellSet(cells=[Cell(replicons=replicons)])
 
@@ -79,9 +79,9 @@ def _classify_gb_record(record) -> str:  # type: ignore[no-untyped-def]
     return "chromosome"
 
 
-def _extract_gb_mges(record) -> list[MGENode]:  # type: ignore[no-untyped-def]
+def _extract_gb_mges(record) -> list[EntityNode]:  # type: ignore[no-untyped-def]
     seen: set[str] = set()
-    mges: list[MGENode] = []
+    mges: list[EntityNode] = []
     for feat in record.features:
         if feat.type.lower() not in _MGE_FEATURE_TYPES:
             continue
@@ -96,7 +96,7 @@ def _extract_gb_mges(record) -> list[MGENode]:  # type: ignore[no-untyped-def]
         if label not in seen:
             seen.add(label)
             size = len(feat.location) if feat.location else None
-            mges.append(MGENode(label=label, size_bp=size))
+            mges.append(EntityNode(label=label, size_bp=size))
     return mges
 
 
@@ -158,9 +158,9 @@ def from_gff_file(path: str | Path) -> CellSet:
                 size = int(end) - int(start) + 1 if start.isdigit() and end.isdigit() else None
                 if label and label not in info["seen_mges"]:
                     info["seen_mges"].add(label)
-                    info["mges"].append(MGENode(label=label, size_bp=size))
+                    info["mges"].append(EntityNode(label=label, size_bp=size))
 
-    replicons: list[Replicon] = []
+    replicons: list[CellularElement] = []
     for info in seq_info.values():
         label = info["label"]
         mges = info["mges"]
@@ -168,7 +168,7 @@ def from_gff_file(path: str | Path) -> CellSet:
         if info["type"] == "chromosome":
             replicons.append(ChromosomeNode(label=label, children=mges, size_bp=size))
         else:
-            replicons.append(MGENode(label=label, children=mges, size_bp=size))
+            replicons.append(EntityNode(label=label, children=mges, size_bp=size))
 
     return CellSet(cells=[Cell(replicons=replicons)])
 
@@ -203,7 +203,7 @@ def from_mobsuite(results_dir: str | Path) -> CellSet:
       mobtyper_results.txt               — replicon type classifications
     """
     results_dir = Path(results_dir)
-    replicons: list[Replicon] = []
+    replicons: list[CellularElement] = []
 
     # Read contig report if present
     contig_report = results_dir / "contig_report.txt"
@@ -222,7 +222,7 @@ def from_mobsuite(results_dir: str | Path) -> CellSet:
         for header, size in parse_fasta_headers(chr_fasta):
             replicons.append(ChromosomeNode(label=header, size_bp=size))
 
-    # plasmid_*.fasta → MGENode
+    # plasmid_*.fasta → EntityNode
     for plas_file in sorted(results_dir.glob("plasmid_*.fasta")):
         from .utils import parse_fasta_headers
         for header, size in parse_fasta_headers(plas_file):
@@ -235,7 +235,7 @@ def from_mobsuite(results_dir: str | Path) -> CellSet:
                     attrs["rep_type"] = row["rep_type(s)"]
                 if row.get("mob_type(s)"):
                     attrs["mob_type"] = row["mob_type(s)"]
-            replicons.append(MGENode(label=label, size_bp=size, attributes=attrs))
+            replicons.append(EntityNode(label=label, size_bp=size, attributes=attrs))
 
     if not replicons:
         raise ValueError(

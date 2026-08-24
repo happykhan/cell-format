@@ -3,17 +3,17 @@ CellGen format parser.
 
 Grammar:
   CellSet     → Cell (';' Cell)*
-  Cell        → Replicon (',' Replicon)*
-  Replicon    → Chromosome | MGE
-  Chromosome  → '(' MGE* ')' Label AttributeSet?
-  MGE         → '{' MGE* '}' Label AttributeSet?
+  Cell        → CellularElement (',' CellularElement)*
+  CellularElement → Chromosome | Entity
+  Chromosome  → '(' Entity* ')' Label AttributeSet?
+  Entity      → '{' Entity* '}' Label AttributeSet?
   Label       → string | empty
   AttributeSet→ '[' KeyValue (',' KeyValue)* ']'
   KeyValue    → Key '=' '"' Value '"'
 """
 
 from __future__ import annotations
-from .types import Attributes, Cell, CellSet, ChromosomeNode, MGENode, Replicon
+from .types import Attributes, Cell, CellSet, CellularElement, ChromosomeNode, EntityNode
 
 
 class ParseError(Exception):
@@ -85,25 +85,25 @@ class _Parser:
             replicons.append(self._parse_replicon())
         return Cell(replicons=replicons)
 
-    def _parse_replicon(self) -> Replicon:
+    def _parse_replicon(self) -> CellularElement:
         nxt = self._peek()
         if nxt == "(":
             return self._parse_chromosome()
         elif nxt == "{":
-            return self._parse_mge()
+            return self._parse_entity()
         else:
             raise ParseError(
-                f"Expected '(' for chromosome or '{{' for MGE but found '{nxt or 'end of input'}'",
+                f"Expected '(' for chromosome or '{{' for entity but found '{nxt or 'end of input'}'",
                 self._pos,
             )
 
     def _parse_chromosome(self) -> ChromosomeNode:
         self._expect("(")
-        children: list[MGENode] = []
+        children: list[EntityNode] = []
         while self._peek() != ")":
             if not self._peek():
                 raise ParseError("Unclosed '(' — missing ')'", self._pos)
-            children.append(self._parse_mge())
+            children.append(self._parse_entity())
             if self._peek() == ",":
                 self._consume()
         self._expect(")")
@@ -111,19 +111,19 @@ class _Parser:
         attributes = self._parse_attributes()
         return ChromosomeNode(label=label, children=children, attributes=attributes)
 
-    def _parse_mge(self) -> MGENode:
+    def _parse_entity(self) -> EntityNode:
         self._expect("{")
-        children: list[MGENode] = []
+        children: list[EntityNode] = []
         while self._peek() != "}":
             if not self._peek():
                 raise ParseError("Unclosed '{' — missing '}'", self._pos)
-            children.append(self._parse_mge())
+            children.append(self._parse_entity())
             if self._peek() == ",":
                 self._consume()
         self._expect("}")
         label = self._parse_label()
         attributes = self._parse_attributes()
-        return MGENode(label=label, children=children, attributes=attributes)
+        return EntityNode(label=label, children=children, attributes=attributes)
 
     def _parse_label(self) -> str:
         self._skip_ws()

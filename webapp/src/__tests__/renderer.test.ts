@@ -37,14 +37,22 @@ describe('renderSVG', () => {
 
   it('renders a plasmid circle', () => {
     const out = svg('{}pBAD')
-    expect(out).toContain('#e6f5e6')  // MGE_FILL
-    expect(out).toContain('#3a9943')  // MGE_STROKE
+    expect(out).toContain('#e6f5e6')  // ENTITY_FILL
+    expect(out).toContain('#3a9943')  // ENTITY_STROKE
   })
 
-  it('renders nested MGE elements as arc sectors', () => {
+  it('renders nested entities as arc sectors', () => {
     const out = svg('({}Tn3)chr1')
     expect(out).toContain('<path')   // arc elements use SVG path
     expect(out).toContain('Tn3')
+  })
+
+  it('renders a schematic fungal Starship with its nested entities', () => {
+    const out = svg('({ {}DUF3435_captain[type="gene"], {}cargo_gene_cluster[type="gene_cluster"] }Starship[type="starship"])chromosome')
+    expect(out).toContain('Starship')
+    expect(out).toContain('DUF3435_captain')
+    expect(out).toContain('cargo_gene_cluster')
+    expect(out).toContain('#6c5ce7')
   })
 
   it('shows containment for deeply nested elements', () => {

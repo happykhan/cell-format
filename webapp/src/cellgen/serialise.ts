@@ -2,7 +2,7 @@
  * Serialise a CellSet back to a CellGen format string.
  */
 
-import type { Cell, CellSet, MGENode, Replicon } from './types'
+import type { Cell, CellSet, CellularElement, EntityNode } from './types'
 
 export function toCellGen(cellSet: CellSet): string {
   return cellSet.cells.map(cellStr).join(' ; ')
@@ -12,17 +12,17 @@ function cellStr(cell: Cell): string {
   return cell.replicons.map(repliconStr).join(', ')
 }
 
-function repliconStr(r: Replicon): string {
+function repliconStr(r: CellularElement): string {
   if (r.kind === 'chromosome') {
-    const inner = r.children.map(mgeStr).join(', ')
+    const inner = r.children.map(entityStr).join(', ')
     const attrs = attrsStr(r.attributes)
     return `(${inner})${r.label}${attrs}`
   }
-  return mgeStr(r)
+  return entityStr(r)
 }
 
-function mgeStr(m: MGENode): string {
-  const inner = m.children.map(mgeStr).join(', ')
+function entityStr(m: EntityNode): string {
+  const inner = m.children.map(entityStr).join(', ')
   const attrs = attrsStr(m.attributes)
   return `{${inner}}${m.label}${attrs}`
 }

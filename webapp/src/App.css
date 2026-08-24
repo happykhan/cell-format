@@ -574,7 +574,7 @@
 }
 
 .builder-chr { border-left-color: #3a6fba; }
-.builder-mge { border-left-color: #3a9943; }
+.builder-entity { border-left-color: #3a9943; }
 
 .builder-replicon-header {
   display: flex;
@@ -656,8 +656,8 @@
 
 .builder-add-nested-btn:hover { color: var(--cellgen-accent); }
 
-/* ── Nested MGE cards ────────────────────────── */
-.mge-card {
+/* ── Nested Entity cards ────────────────────────── */
+.entity-card {
   border: 1px solid var(--cellgen-border);
   border-left: 3px solid #3a9943;
   border-radius: var(--cellgen-radius);
@@ -669,24 +669,24 @@
   gap: 0.25rem;
 }
 
-.mge-card .mge-card {
+.entity-card .entity-card {
   /* nested card: slightly inset look */
   margin: 0.25rem 0 0 0.5rem;
   background: color-mix(in srgb, var(--cellgen-border) 20%, var(--cellgen-bg));
 }
 
-.mge-card-header {
+.entity-card-header {
   display: flex;
   align-items: center;
   gap: 0.3rem;
 }
 
-.mge-card-label {
+.entity-card-label {
   font-size: 0.9rem;
   font-weight: 500;
 }
 
-.mge-add-inside-btn {
+.entity-add-inside-btn {
   font-size: 0.78rem;
   padding: 0.25rem 0.6rem;
   border: 1px solid var(--cellgen-accent);
@@ -699,7 +699,7 @@
   font-family: inherit;
 }
 
-.mge-add-inside-btn:hover {
+.entity-add-inside-btn:hover {
   background: color-mix(in srgb, var(--cellgen-accent) 10%, transparent);
 }
 

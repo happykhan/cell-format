@@ -1,14 +1,14 @@
 # CellGen
 
-A compact, human-readable notation for describing the organisation of bacterial genomes — inspired by the Newick format for phylogenetic trees.
+A compact, human-readable notation for describing cellular genome organisation, inspired by the Newick format for phylogenetic trees.
 
 ## Overview
 
-Long-read sequencing now routinely produces complete genome assemblies, revealing the full complement of chromosomes, plasmids, and mobile genetic elements (MGEs) in a cell. CellGen provides a standard way to record and share this information in a single line of text.
+Long-read sequencing now routinely produces complete genome assemblies, revealing chromosomes and the biological entities contained within or alongside them. These entities may be plasmids, mobile genetic elements, genes, gene clusters or other structures. CellGen records their containment relationships in a single line of text.
 
 **Key features**
 
-- Describes chromosomes, plasmids, transposons, integrons, and other MGEs
+- Describes chromosomes and any other labelled biological entity
 - Captures nested containment (e.g. an integron inside a plasmid)
 - Represents multiple cells in one string (e.g. two strains sharing a plasmid)
 - Supports free-text labels and key-value attributes
@@ -24,17 +24,17 @@ Long-read sequencing now routinely produces complete genome assemblies, revealin
 
 ```
 CellSet      → Cell (';' Cell)*
-Cell         → Replicon (',' Replicon)*
-Replicon     → Chromosome | MGE
-Chromosome   → '(' MGE* ')' Label AttributeSet?
-MGE          → '{' MGE* '}' Label AttributeSet?
+Cell         → CellularElement (',' CellularElement)*
+CellularElement → Chromosome | Entity
+Chromosome   → '(' Entity* ')' Label AttributeSet?
+Entity       → '{' Entity* '}' Label AttributeSet?
 Label        → string | empty
 AttributeSet → '[' KeyValue (',' KeyValue)* ']'
 KeyValue     → Key '=' '"' Value '"'
 ```
 
-- `( ... )` — chromosome
-- `{ ... }` — non-chromosomal element (plasmid, transposon, integron, phage, etc.)
+- `( ... )` means chromosome, and only chromosome.
+- `{ ... }` means any other biological entity. Its class is supplied by its label or a `type` attribute, for example `plasmid`, `transposon`, `gene`, `gene_cluster` or `starship`.
 - `;` — separates cells in a multi-cell set
 - `,` — separates replicons within a cell
 - `[key="value"]` — optional attributes on any element
@@ -76,6 +76,13 @@ KeyValue     → Key '=' '"' Value '"'
 ()chromosome, { {}integronA }plasmid1, { {}integronA }plasmid2
 ```
 
+**Fungal chromosome containing a Starship (schematic)**
+```
+({ {}DUF3435_captain[type="gene", role="captain"], {}cargo_gene_cluster[type="gene_cluster", role="cargo"] }Starship[type="starship", representation="schematic"])chromosome[organism="Macrophomina phaseolina"]
+```
+
+This example represents the characteristic architecture described for fungal Starships: a chromosome-integrated element containing a DUF3435 tyrosine recombinase (the captain) and downstream cargo. It is a structural illustration, not a transcription of one annotated sequence. See [Gluck-Thaler et al. (2022)](https://doi.org/10.1093/molbev/msac109).
+
 ## Web app (`webapp/`)
 
 A fully client-side React and TypeScript application.
@@ -83,7 +90,7 @@ A fully client-side React and TypeScript application.
 ### Features
 
 - **Live parser** — type or paste a CellGen string; errors shown inline with position
-- **SVG renderer** — circular diagrams: blue for chromosomes, green for plasmids, coloured rectangles on borders for MGEs
+- **SVG renderer** — circular diagrams: blue for chromosomes, green for top-level non-chromosomal entities, and coloured arcs for contained entities
 - **GenBank / GFF3 import** — upload an annotated assembly file to auto-generate the CellGen string
 - **Download** — export the diagram as SVG or the format string as plain text
 - **No server required** — everything runs in the browser

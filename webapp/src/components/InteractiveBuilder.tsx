@@ -1,12 +1,12 @@
 /**
- * Interactive genome builder — click to add chromosomes, plasmids, and MGEs.
+ * Interactive genome builder for chromosomes and other contained entities.
  * Supports recursive nesting: e.g. blaKPC-2 inside Tn4401 inside pKpQIL.
  */
 
 import { useState, useEffect } from 'react'
-import type { CellSet, ChromosomeNode, MGENode } from '../cellgen/types'
+import type { CellSet, ChromosomeNode, EntityNode } from '../cellgen/types'
 
-type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'gene' | 'element'
+type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'starship' | 'gene' | 'gene_cluster' | 'element'
 
 const ELEMENT_LABELS: Record<ElementType, string> = {
   chromosome: 'Chromosome',
@@ -15,7 +15,9 @@ const ELEMENT_LABELS: Record<ElementType, string> = {
   integron: 'Integron',
   insertion_sequence: 'Insertion sequence',
   phage: 'Prophage',
+  starship: 'Starship',
   gene: 'Gene',
+  gene_cluster: 'Gene cluster',
   element: 'Element',
 }
 
@@ -26,7 +28,9 @@ const DEFAULT_COLOURS: Record<string, string> = {
   integron: '#9b59b6',
   insertion_sequence: '#f39c12',
   phage: '#16a085',
+  starship: '#6c5ce7',
   gene: '#c0392b',
+  gene_cluster: '#d35400',
   element: '#aaaaaa',
 }
 
@@ -52,27 +56,28 @@ function elementDot(type: ElementType, customColour?: string) {
   )
 }
 
-// Recursive MGE item — children can themselves have children
-interface MGEItem {
+// Recursive Entity item — children can themselves have children
+interface EntityItem {
   type: ElementType
   label: string
   colour?: string   // custom colour; undefined = use type default
-  mges: MGEItem[]
+  entities: EntityItem[]
 }
 
 interface BuilderState {
   cells: Array<{
-    chromosomes: Array<{ label: string; mges: MGEItem[] }>
-    mges: MGEItem[]
+    chromosomes: Array<{ label: string; entities: EntityItem[] }>
+    entities: EntityItem[]
   }>
 }
 
-function mgeItemStr(m: MGEItem, nested = false): string {
-  const inner = m.mges.map((child) => mgeItemStr(child, true)).join(', ')
+function entityItemStr(m: EntityItem, nested = false): string {
+  const inner = m.entities.map((child) => entityItemStr(child, true)).join(', ')
   const defaultCol = DEFAULT_COLOURS[m.type] || '#aaa'
   const attrParts: string[] = []
-  // Only serialize type for nested elements that are not the generic default ('element')
-  if (nested && m.type !== 'element') {
+  // A top-level plasmid remains the conventional default; every other typed
+  // entity is explicit because braces do not imply a biological class.
+  if (m.type !== 'element' && (nested || m.type !== 'plasmid')) {
     attrParts.push(`type="${m.type}"`)
   }
   if (m.colour && m.colour !== defaultCol) {
@@ -87,25 +92,25 @@ function stateToCellGen(state: BuilderState): string {
     .map((cell) => {
       const parts: string[] = []
       for (const chr of cell.chromosomes) {
-        const inner = chr.mges.map((m) => mgeItemStr(m, true)).join(', ')
+        const inner = chr.entities.map((m) => entityItemStr(m, true)).join(', ')
         parts.push(`(${inner})${chr.label}`)
       }
-      for (const mge of cell.mges) {
-        parts.push(mgeItemStr(mge, false))  // top-level → plasmid is default, no type attr
+      for (const entity of cell.entities) {
+        parts.push(entityItemStr(entity, false))
       }
       return parts.join(', ')
     })
     .join(' ; ')
 }
 
-function mgeNodeToItem(m: MGENode, nested = false): MGEItem {
+function entityNodeToItem(m: EntityNode, nested = false): EntityItem {
   const explicitType = m.attributes.type as ElementType | undefined
   const type: ElementType = explicitType ?? (nested ? 'element' : 'plasmid')
   return {
     type,
     label: m.label,
     colour: m.attributes.colour || undefined,
-    mges: m.children.map((child) => mgeNodeToItem(child, true)),
+    entities: m.children.map((child) => entityNodeToItem(child, true)),
   }
 }
 
@@ -114,20 +119,20 @@ function cellSetToBuilderState(cs: CellSet): BuilderState {
     cells: cs.cells.map((cell) => ({
       chromosomes: cell.replicons
         .filter((r): r is ChromosomeNode => r.kind === 'chromosome')
-        .map((ch) => ({ label: ch.label, mges: ch.children.map((m) => mgeNodeToItem(m, true)) })),
-      mges: cell.replicons
-        .filter((r): r is MGENode => r.kind === 'mge')
-        .map((m) => mgeNodeToItem(m, false)),
+        .map((ch) => ({ label: ch.label, entities: ch.children.map((m) => entityNodeToItem(m, true)) })),
+      entities: cell.replicons
+        .filter((r): r is EntityNode => r.kind === 'entity')
+        .map((m) => entityNodeToItem(m, false)),
     })),
   }
 }
 
-// Path into the MGEItem tree: array of indices navigating into .mges
-type MGEPath = number[]
+// Path into the EntityItem tree: array of indices navigating into .entities
+type EntityPath = number[]
 
-function getAtPath(root: MGEItem[], path: MGEPath): MGEItem {
+function getAtPath(root: EntityItem[], path: EntityPath): EntityItem {
   let node = root[path[0]]
-  for (let i = 1; i < path.length; i++) node = node.mges[path[i]]
+  for (let i = 1; i < path.length; i++) node = node.entities[path[i]]
   return node
 }
 
@@ -135,11 +140,11 @@ function getAtPath(root: MGEItem[], path: MGEPath): MGEItem {
 type ModalTarget =
   | { kind: 'cell' }
   | { kind: 'chr'; chrIdx: number }
-  | { kind: 'chr-mge'; chrIdx: number; path: MGEPath }
-  | { kind: 'mge'; path: MGEPath }
+  | { kind: 'chr-entity'; chrIdx: number; path: EntityPath }
+  | { kind: 'entity'; path: EntityPath }
   | { kind: 'edit-chr'; chrIdx: number }
-  | { kind: 'edit-chr-mge'; chrIdx: number; path: MGEPath }
-  | { kind: 'edit-mge'; path: MGEPath }
+  | { kind: 'edit-chr-entity'; chrIdx: number; path: EntityPath }
+  | { kind: 'edit-entity'; path: EntityPath }
 
 interface ModalState {
   cellIdx: number
@@ -154,7 +159,7 @@ interface Props {
 }
 
 export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
-  const [state, setState] = useState<BuilderState>({ cells: [{ chromosomes: [], mges: [] }] })
+  const [state, setState] = useState<BuilderState>({ cells: [{ chromosomes: [], entities: [] }] })
   const [modal, setModal] = useState<ModalState | null>(null)
   const [newLabel, setNewLabel] = useState('')
   const [newType, setNewType] = useState<ElementType>('chromosome')
@@ -164,7 +169,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     if (syncFrom) {
       setState(cellSetToBuilderState(syncFrom))
     } else {
-      setState({ cells: [{ chromosomes: [], mges: [] }] })
+      setState({ cells: [{ chromosomes: [], entities: [] }] })
     }
   }, [syncVersion]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -199,14 +204,14 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
       const t = modal.target
       if (t.kind === 'edit-chr') {
         cell.chromosomes[t.chrIdx].label = label
-      } else if (t.kind === 'edit-chr-mge') {
-        const root = cell.chromosomes[t.chrIdx].mges
+      } else if (t.kind === 'edit-chr-entity') {
+        const root = cell.chromosomes[t.chrIdx].entities
         const item = t.path.length === 1 ? root[t.path[0]] : getAtPath(root, t.path)
         item.label = label
         item.type = newType
         item.colour = colour
-      } else if (t.kind === 'edit-mge') {
-        const item = t.path.length === 1 ? cell.mges[t.path[0]] : getAtPath(cell.mges, t.path)
+      } else if (t.kind === 'edit-entity') {
+        const item = t.path.length === 1 ? cell.entities[t.path[0]] : getAtPath(cell.entities, t.path)
         item.label = label
         item.type = newType
         item.colour = colour
@@ -214,24 +219,24 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     } else {
       if (modal.target.kind === 'cell') {
         if (newType === 'chromosome') {
-          cell.chromosomes.push({ label, mges: [] })
+          cell.chromosomes.push({ label, entities: [] })
         } else {
-          cell.mges.push({ type: newType, label, colour, mges: [] })
+          cell.entities.push({ type: newType, label, colour, entities: [] })
         }
       } else if (modal.target.kind === 'chr') {
-        cell.chromosomes[modal.target.chrIdx].mges.push({ type: newType, label, colour, mges: [] })
-      } else if (modal.target.kind === 'chr-mge') {
+        cell.chromosomes[modal.target.chrIdx].entities.push({ type: newType, label, colour, entities: [] })
+      } else if (modal.target.kind === 'chr-entity') {
         const { chrIdx, path } = modal.target
-        const root = cell.chromosomes[chrIdx].mges
+        const root = cell.chromosomes[chrIdx].entities
         const target = path.length === 1 ? root[path[0]] : getAtPath(root, path)
-        target.mges.push({ type: newType, label, colour, mges: [] })
-      } else if (modal.target.kind === 'mge') {
+        target.entities.push({ type: newType, label, colour, entities: [] })
+      } else if (modal.target.kind === 'entity') {
         const { path } = modal.target
-        const root = cell.mges
+        const root = cell.entities
         if (path.length === 1) {
-          root[path[0]].mges.push({ type: newType, label, colour, mges: [] })
+          root[path[0]].entities.push({ type: newType, label, colour, entities: [] })
         } else {
-          getAtPath(root, path).mges.push({ type: newType, label, colour, mges: [] })
+          getAtPath(root, path).entities.push({ type: newType, label, colour, entities: [] })
         }
       }
     }
@@ -242,7 +247,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
   const removeCell = (idx: number) => {
     const cells = state.cells.filter((_, i) => i !== idx)
-    update({ cells: cells.length ? cells : [{ chromosomes: [], mges: [] }] })
+    update({ cells: cells.length ? cells : [{ chromosomes: [], entities: [] }] })
   }
 
   const removeChromosome = (ci: number, chri: number) => {
@@ -251,26 +256,26 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     update(next)
   }
 
-  const removeMGE = (ci: number, path: MGEPath) => {
+  const removeEntity = (ci: number, path: EntityPath) => {
     const next = JSON.parse(JSON.stringify(state)) as BuilderState
-    const root = next.cells[ci].mges
+    const root = next.cells[ci].entities
     if (path.length === 1) {
       root.splice(path[0], 1)
     } else {
       const parent = getAtPath(root, path.slice(0, -1))
-      parent.mges.splice(path[path.length - 1], 1)
+      parent.entities.splice(path[path.length - 1], 1)
     }
     update(next)
   }
 
-  const removeChrNestedMGE = (ci: number, chrIdx: number, path: MGEPath) => {
+  const removeChrNestedEntity = (ci: number, chrIdx: number, path: EntityPath) => {
     const next = JSON.parse(JSON.stringify(state)) as BuilderState
-    const root = next.cells[ci].chromosomes[chrIdx].mges
+    const root = next.cells[ci].chromosomes[chrIdx].entities
     if (path.length === 1) {
       root.splice(path[0], 1)
     } else {
       const parent = getAtPath(root, path.slice(0, -1))
-      parent.mges.splice(path[path.length - 1], 1)
+      parent.entities.splice(path[path.length - 1], 1)
     }
     update(next)
   }
@@ -279,28 +284,28 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
   const typeOptions =
     modal?.target.kind === 'cell'
-      ? (['chromosome', 'plasmid'] as ElementType[])  // top-level: replicons only
-      : (['element', 'gene', 'transposon', 'integron', 'insertion_sequence', 'phage', 'plasmid'] as ElementType[])
+      ? (['chromosome', 'plasmid', 'starship', 'transposon', 'integron', 'insertion_sequence', 'phage', 'gene', 'gene_cluster', 'element'] as ElementType[])
+      : (['element', 'gene', 'gene_cluster', 'transposon', 'integron', 'insertion_sequence', 'phage', 'starship', 'plasmid'] as ElementType[])
 
-  function renderMGEItem(ci: number, path: MGEPath, item: MGEItem, depth: number) {
+  function renderEntityItem(ci: number, path: EntityPath, item: EntityItem, depth: number) {
     const colour = resolveColour(item.type, item.colour)
     return (
-      <div key={path.join('-')} className="mge-card" style={{ borderLeftColor: colour }}>
-        <div className="mge-card-header">
+      <div key={path.join('-')} className="entity-card" style={{ borderLeftColor: colour }}>
+        <div className="entity-card-header">
           {elementDot(item.type, item.colour)}
           <button
-            className="builder-label-btn mge-card-label"
-            onClick={() => openEdit(ci, { kind: 'edit-mge', path }, item.label, item.type, item.colour)}
+            className="builder-label-btn entity-card-label"
+            onClick={() => openEdit(ci, { kind: 'edit-entity', path }, item.label, item.type, item.colour)}
             title="Click to edit"
           >
             {item.label || `(${item.type})`}
           </button>
-          <button className="builder-remove-btn" title="Remove" onClick={() => removeMGE(ci, path)}>×</button>
+          <button className="builder-remove-btn" title="Remove" onClick={() => removeEntity(ci, path)}>×</button>
         </div>
-        {item.mges.map((child, ni) => renderMGEItem(ci, [...path, ni], child, depth + 1))}
+        {item.entities.map((child, ni) => renderEntityItem(ci, [...path, ni], child, depth + 1))}
         <button
-          className="mge-add-inside-btn"
-          onClick={() => openModal(ci, { kind: 'mge', path })}
+          className="entity-add-inside-btn"
+          onClick={() => openModal(ci, { kind: 'entity', path })}
         >
           + Add inside {item.label || item.type}
         </button>
@@ -308,25 +313,25 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
     )
   }
 
-  function renderChrMGEItem(ci: number, chrIdx: number, path: MGEPath, item: MGEItem) {
+  function renderChrEntityItem(ci: number, chrIdx: number, path: EntityPath, item: EntityItem) {
     const colour = resolveColour(item.type, item.colour)
     return (
-      <div key={path.join('-')} className="mge-card" style={{ borderLeftColor: colour }}>
-        <div className="mge-card-header">
+      <div key={path.join('-')} className="entity-card" style={{ borderLeftColor: colour }}>
+        <div className="entity-card-header">
           {elementDot(item.type, item.colour)}
           <button
-            className="builder-label-btn mge-card-label"
-            onClick={() => openEdit(ci, { kind: 'edit-chr-mge', chrIdx, path }, item.label, item.type, item.colour)}
+            className="builder-label-btn entity-card-label"
+            onClick={() => openEdit(ci, { kind: 'edit-chr-entity', chrIdx, path }, item.label, item.type, item.colour)}
             title="Click to edit"
           >
             {item.label || `(${item.type})`}
           </button>
-          <button className="builder-remove-btn" title="Remove" onClick={() => removeChrNestedMGE(ci, chrIdx, path)}>×</button>
+          <button className="builder-remove-btn" title="Remove" onClick={() => removeChrNestedEntity(ci, chrIdx, path)}>×</button>
         </div>
-        {item.mges.map((child, ni) => renderChrMGEItem(ci, chrIdx, [...path, ni], child))}
+        {item.entities.map((child, ni) => renderChrEntityItem(ci, chrIdx, [...path, ni], child))}
         <button
-          className="mge-add-inside-btn"
-          onClick={() => openModal(ci, { kind: 'chr-mge', chrIdx, path })}
+          className="entity-add-inside-btn"
+          onClick={() => openModal(ci, { kind: 'chr-entity', chrIdx, path })}
         >
           + Add inside {item.label || item.type}
         </button>
@@ -358,37 +363,37 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
                 </button>
                 <button className="builder-remove-btn" onClick={() => removeChromosome(ci, chri)}>×</button>
               </div>
-              {chr.mges.map((m, mi) => renderChrMGEItem(ci, chri, [mi], m))}
+              {chr.entities.map((m, mi) => renderChrEntityItem(ci, chri, [mi], m))}
               <button
                 className="builder-add-nested-btn"
                 onClick={() => openModal(ci, { kind: 'chr', chrIdx: chri })}
               >
-                + Add MGE to chromosome
+                + Add entity to chromosome
               </button>
             </div>
           ))}
 
-          {cell.mges.map((mge, mi) => {
-            const colour = resolveColour(mge.type, mge.colour)
+          {cell.entities.map((entity, mi) => {
+            const colour = resolveColour(entity.type, entity.colour)
             return (
-              <div key={mi} className="mge-card" style={{ borderLeftColor: colour }}>
-                <div className="mge-card-header">
-                  {elementDot(mge.type, mge.colour)}
+              <div key={mi} className="entity-card" style={{ borderLeftColor: colour }}>
+                <div className="entity-card-header">
+                  {elementDot(entity.type, entity.colour)}
                   <button
-                    className="builder-label-btn mge-card-label"
-                    onClick={() => openEdit(ci, { kind: 'edit-mge', path: [mi] }, mge.label, mge.type, mge.colour)}
+                    className="builder-label-btn entity-card-label"
+                    onClick={() => openEdit(ci, { kind: 'edit-entity', path: [mi] }, entity.label, entity.type, entity.colour)}
                     title="Click to edit"
                   >
-                    {mge.label || `(${mge.type})`}
+                    {entity.label || `(${entity.type})`}
                   </button>
-                  <button className="builder-remove-btn" onClick={() => removeMGE(ci, [mi])}>×</button>
+                  <button className="builder-remove-btn" onClick={() => removeEntity(ci, [mi])}>×</button>
                 </div>
-                {mge.mges.map((child, ni) => renderMGEItem(ci, [mi, ni], child, 1))}
+                {entity.entities.map((child, ni) => renderEntityItem(ci, [mi, ni], child, 1))}
                 <button
-                  className="mge-add-inside-btn"
-                  onClick={() => openModal(ci, { kind: 'mge', path: [mi] })}
+                  className="entity-add-inside-btn"
+                  onClick={() => openModal(ci, { kind: 'entity', path: [mi] })}
                 >
-                  + Add inside {mge.label || mge.type}
+                  + Add inside {entity.label || entity.type}
                 </button>
               </div>
             )
@@ -402,7 +407,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
       <button
         className="button button-secondary"
-        onClick={() => update({ cells: [...state.cells, { chromosomes: [], mges: [] }] })}
+        onClick={() => update({ cells: [...state.cells, { chromosomes: [], entities: [] }] })}
         style={{ marginTop: '0.75rem' }}
       >
         + Add cell
@@ -412,7 +417,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
         <div className="builder-modal-overlay" onClick={() => setModal(null)}>
           <div className="builder-modal" onClick={(e) => e.stopPropagation()}>
             <div className="builder-modal-title">
-              {modal.isEdit ? 'Edit element' : modal.target.kind === 'cell' ? 'Add element' : 'Add MGE'}
+              {modal.isEdit ? 'Edit element' : modal.target.kind === 'cell' ? 'Add element' : 'Add entity'}
             </div>
 
             {!isChrEdit && (
