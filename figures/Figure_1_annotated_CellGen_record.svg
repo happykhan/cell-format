@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1000" viewBox="0 0 1800 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Annotated CellGen record and circular visualisation</title>
+  <desc id="desc">A complete Klebsiella pneumoniae CellGen record with annotated chromosome, plasmid, nested mobile elements, genes and attributes, paired with its circular visualisation.</desc>
+  <defs>
+    <style>
+      .sans { font-family: Inter, Arial, sans-serif; }
+      .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+      .panel-label { font: 700 28px Inter, Arial, sans-serif; fill: #17212b; }
+      .panel-title { font: 700 24px Inter, Arial, sans-serif; fill: #17212b; }
+      .code { font: 20px "SFMono-Regular", Consolas, "Liberation Mono", monospace; fill: #27313c; }
+      .code-muted { fill: #6b7480; }
+      .small { font: 15px Inter, Arial, sans-serif; fill: #65707d; }
+      .label { font: 700 17px Inter, Arial, sans-serif; }
+      .diagram-label { font: 700 17px Inter, Arial, sans-serif; fill: #24303c; }
+    </style>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#203040" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <rect width="1800" height="1000" fill="#ffffff"/>
+
+  <text x="40" y="45" class="panel-label">A</text>
+  <text x="88" y="45" class="panel-title">CellGen record and structural annotation</text>
+  <text x="1120" y="45" class="panel-label">B</text>
+  <text x="1168" y="45" class="panel-title">Circular visualisation</text>
+
+  <!-- Panel A: annotated source record -->
+  <rect x="40" y="70" width="1020" height="885" rx="14" fill="#f8fafc" stroke="#d7dee7" stroke-width="2"/>
+
+  <!-- Grammar key -->
+  <rect x="68" y="94" width="258" height="42" rx="8" fill="#eef4fd" stroke="#3975dc" stroke-width="2"/>
+  <text x="88" y="121" class="label" fill="#3975dc">( ) chromosome</text>
+  <rect x="340" y="94" width="292" height="42" rx="8" fill="#fff7eb" stroke="#e77914" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="360" y="121" class="label" fill="#d96708">{ } other entity</text>
+  <rect x="646" y="94" width="288" height="42" rx="8" fill="#f4f5f7" stroke="#7c8794" stroke-width="2"/>
+  <text x="666" y="121" class="label" fill="#596574">[ ] attributes</text>
+
+  <!-- Major containment boxes behind code -->
+  <rect x="66" y="155" width="850" height="347" rx="12" fill="#eef4fd" fill-opacity="0.62" stroke="#3975dc" stroke-width="3"/>
+  <rect x="104" y="194" width="630" height="128" rx="10" fill="#fff7eb" fill-opacity="0.88" stroke="#e77914" stroke-width="3" stroke-dasharray="8 6"/>
+  <rect x="142" y="228" width="438" height="35" rx="17" fill="#fdebec" stroke="#d92d2d" stroke-width="2"/>
+
+  <rect x="66" y="526" width="850" height="386" rx="12" fill="#fff7eb" fill-opacity="0.76" stroke="#e77914" stroke-width="3" stroke-dasharray="8 6"/>
+  <rect x="104" y="565" width="630" height="128" rx="10" fill="#fffaf2" stroke="#e77914" stroke-width="3" stroke-dasharray="8 6"/>
+  <rect x="142" y="599" width="470" height="35" rx="17" fill="#fdebec" stroke="#d92d2d" stroke-width="2"/>
+
+  <!-- Annotation tags -->
+  <rect x="782" y="167" width="242" height="34" rx="17" fill="#3975dc"/>
+  <text x="903" y="190" text-anchor="middle" class="label" fill="#ffffff">chromosome ( )</text>
+  <rect x="756" y="208" width="268" height="34" rx="17" fill="#e77914"/>
+  <text x="890" y="231" text-anchor="middle" class="label" fill="#ffffff">Tn4401 transposon { }</text>
+  <rect x="808" y="536" width="216" height="34" rx="17" fill="#e77914"/>
+  <text x="916" y="559" text-anchor="middle" class="label" fill="#ffffff">pKPC plasmid { }</text>
+  <rect x="786" y="579" width="238" height="34" rx="17" fill="#e77914"/>
+  <text x="905" y="602" text-anchor="middle" class="label" fill="#ffffff">intI1 integron { }</text>
+
+  <!-- Attribute callouts -->
+  <path d="M 748 367 L 974 367 L 974 310" fill="none" stroke="#7c8794" stroke-width="2"/>
+  <rect x="826" y="276" width="198" height="34" rx="17" fill="#687584"/>
+  <text x="925" y="299" text-anchor="middle" class="label" fill="#ffffff">host and topology</text>
+  <path d="M 748 817 L 974 817 L 974 768" fill="none" stroke="#7c8794" stroke-width="2"/>
+  <rect x="826" y="734" width="198" height="34" rx="17" fill="#687584"/>
+  <text x="925" y="757" text-anchor="middle" class="label" fill="#ffffff">type and mobility</text>
+
+  <!-- Code -->
+  <g class="code">
+    <text x="88" y="185">(</text>
+    <text x="110" y="224">{</text>
+    <text x="148" y="257"><tspan fill="#e77914">{}</tspan><tspan fill="#b52525">blaKPC-2</tspan><tspan class="code-muted">[type="gene"]</tspan></text>
+    <text x="110" y="296">}<tspan fill="#c45e05">Tn4401</tspan><tspan class="code-muted">[type="transposon"]</tspan></text>
+    <text x="88" y="335">)<tspan fill="#2f68c5">chromosome</tspan>[</text>
+    <text x="110" y="374">host=<tspan fill="#6b3fa0">"Klebsiella pneumoniae"</tspan>,</text>
+    <text x="110" y="413">topology=<tspan fill="#6b3fa0">"circular"</tspan></text>
+    <text x="88" y="452">],</text>
+
+    <text x="88" y="556">{</text>
+    <text x="110" y="595">{</text>
+    <text x="148" y="628"><tspan fill="#e77914">{}</tspan><tspan fill="#b52525">blaCTX-M-15</tspan><tspan class="code-muted">[type="gene"]</tspan></text>
+    <text x="110" y="667">}<tspan fill="#c45e05">intI1</tspan><tspan class="code-muted">[type="integron"]</tspan></text>
+    <text x="88" y="706">}<tspan fill="#c45e05">pKPC</tspan>[</text>
+    <text x="110" y="745">type=<tspan fill="#6b3fa0">"plasmid"</tspan>,</text>
+    <text x="110" y="784">mobility=<tspan fill="#6b3fa0">"conjugative"</tspan></text>
+    <text x="88" y="823">]</text>
+  </g>
+
+  <text x="88" y="940" class="small">Nesting records physical containment; attributes describe each entity without changing the grammar.</text>
+
+  <!-- Panel B: circular renderer -->
+  <rect x="1120" y="70" width="640" height="885" rx="14" fill="#ffffff" stroke="#d7dee7" stroke-width="2"/>
+  <text x="1154" y="112" class="diagram-label" font-style="italic">Klebsiella pneumoniae</text>
+  <text x="1154" y="137" class="small">The same CellGen record rendered as a genome diagram</text>
+
+  <!-- Chromosome circle -->
+  <circle cx="1410" cy="410" r="220" fill="#eef4fd" stroke="#3975dc" stroke-width="25" filter="url(#shadow)"/>
+  <circle cx="1410" cy="410" r="194" fill="#ffffff" stroke="#d9e5f7" stroke-width="2"/>
+  <text x="1410" y="410" text-anchor="middle" class="diagram-label" fill="#3975dc">chromosome</text>
+  <text x="1410" y="436" text-anchor="middle" class="small">circular</text>
+
+  <!-- Tn4401 and blaKPC-2 nested arcs -->
+  <path d="M 1300.0 219.5 A 220 220 0 0 1 1520.0 219.5 L 1507.5 241.2 A 195 195 0 0 0 1312.5 241.2 Z" fill="#e77914" stroke="#ffffff" stroke-width="2"/>
+  <path d="M 1342.9 194.8 A 228 228 0 0 1 1477.1 194.8 L 1469.4 219.0 A 203 203 0 0 0 1350.6 219.0 Z" fill="#d92d2d" stroke="#ffffff" stroke-width="2"/>
+  <path d="M 1300 202 L 1215 164" fill="none" stroke="#9aa5b1" stroke-width="2"/>
+  <text x="1205" y="159" text-anchor="end" class="diagram-label" fill="#c45e05">Tn4401</text>
+  <text x="1205" y="180" text-anchor="end" class="small">transposon</text>
+  <path d="M 1410 182 L 1518 146" fill="none" stroke="#9aa5b1" stroke-width="2"/>
+  <text x="1528" y="142" class="diagram-label" fill="#b52525">blaKPC-2</text>
+  <text x="1528" y="163" class="small">gene</text>
+
+  <!-- Plasmid -->
+  <circle cx="1505" cy="770" r="105" fill="#eef8ee" stroke="#3a9943" stroke-width="15" filter="url(#shadow)"/>
+  <circle cx="1505" cy="770" r="88" fill="#ffffff" stroke="#d9eadb" stroke-width="2"/>
+  <text x="1505" y="766" text-anchor="middle" class="diagram-label" fill="#31823a">pKPC</text>
+  <text x="1505" y="789" text-anchor="middle" class="small">conjugative plasmid</text>
+
+  <!-- intI1 and blaCTX-M-15 nested arcs -->
+  <path d="M 1452.5 679.1 A 105 105 0 0 1 1557.5 679.1 L 1549.0 693.8 A 88 88 0 0 0 1461.0 693.8 Z" fill="#e77914" stroke="#ffffff" stroke-width="2"/>
+  <path d="M 1472.5 664.9 A 110 110 0 0 1 1537.5 664.9 L 1530.4 687.0 A 87 87 0 0 0 1479.6 687.0 Z" fill="#d92d2d" stroke="#ffffff" stroke-width="2"/>
+  <path d="M 1454 674 L 1360 645" fill="none" stroke="#9aa5b1" stroke-width="2"/>
+  <text x="1350" y="641" text-anchor="end" class="diagram-label" fill="#c45e05">intI1</text>
+  <text x="1350" y="662" text-anchor="end" class="small">integron</text>
+  <path d="M 1505 658 L 1596 626" fill="none" stroke="#9aa5b1" stroke-width="2"/>
+  <text x="1606" y="622" class="diagram-label" fill="#b52525">blaCTX-M-15</text>
+  <text x="1606" y="643" class="small">gene</text>
+
+  <!-- Visual key -->
+  <line x1="1160" y1="890" x2="1210" y2="890" stroke="#3975dc" stroke-width="12" stroke-linecap="round"/>
+  <text x="1225" y="896" class="small">chromosome</text>
+  <line x1="1360" y1="890" x2="1410" y2="890" stroke="#3a9943" stroke-width="12" stroke-linecap="round"/>
+  <text x="1425" y="896" class="small">plasmid</text>
+  <line x1="1545" y1="890" x2="1595" y2="890" stroke="#e77914" stroke-width="12" stroke-linecap="round"/>
+  <text x="1610" y="896" class="small">contained entity</text>
+  <line x1="1160" y1="925" x2="1210" y2="925" stroke="#d92d2d" stroke-width="12" stroke-linecap="round"/>
+  <text x="1225" y="931" class="small">gene</text>
+</svg>
