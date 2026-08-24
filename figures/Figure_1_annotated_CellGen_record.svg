@@ -36,32 +36,37 @@
   <rect x="646" y="94" width="288" height="42" rx="8" fill="#f4f5f7" stroke="#7c8794" stroke-width="2"/>
   <text x="666" y="121" class="label" fill="#596574">[ ] attributes</text>
 
-  <!-- Major containment boxes behind code -->
-  <rect x="66" y="155" width="850" height="347" rx="12" fill="#eef4fd" fill-opacity="0.62" stroke="#3975dc" stroke-width="3"/>
-  <rect x="104" y="194" width="630" height="128" rx="10" fill="#fff7eb" fill-opacity="0.88" stroke="#e77914" stroke-width="3" stroke-dasharray="8 6"/>
-  <rect x="142" y="228" width="438" height="35" rx="17" fill="#fdebec" stroke="#d92d2d" stroke-width="2"/>
+  <!-- Major record blocks. Borders sit outside the code rather than crossing it. -->
+  <rect x="66" y="155" width="666" height="347" rx="12" fill="#eef4fd" fill-opacity="0.62" stroke="#3975dc" stroke-width="3"/>
+  <rect x="66" y="526" width="666" height="386" rx="12" fill="#fff7eb" fill-opacity="0.76" stroke="#e77914" stroke-width="3" stroke-dasharray="8 6"/>
 
-  <rect x="66" y="526" width="850" height="386" rx="12" fill="#fff7eb" fill-opacity="0.76" stroke="#e77914" stroke-width="3" stroke-dasharray="8 6"/>
-  <rect x="104" y="565" width="630" height="128" rx="10" fill="#fffaf2" stroke="#e77914" stroke-width="3" stroke-dasharray="8 6"/>
-  <rect x="142" y="599" width="470" height="35" rx="17" fill="#fdebec" stroke="#d92d2d" stroke-width="2"/>
+  <!-- Soft highlights identify nested entities without drawing through glyphs. -->
+  <rect x="100" y="202" width="570" height="104" rx="10" fill="#fff7eb" stroke="none"/>
+  <rect x="138" y="234" width="430" height="31" rx="15" fill="#fdebec" stroke="none"/>
+  <rect x="100" y="573" width="570" height="104" rx="10" fill="#fffaf2" stroke="none"/>
+  <rect x="138" y="605" width="462" height="31" rx="15" fill="#fdebec" stroke="none"/>
 
   <!-- Annotation tags -->
-  <rect x="782" y="167" width="242" height="34" rx="17" fill="#3975dc"/>
-  <text x="903" y="190" text-anchor="middle" class="label" fill="#ffffff">chromosome ( )</text>
-  <rect x="756" y="208" width="268" height="34" rx="17" fill="#e77914"/>
-  <text x="890" y="231" text-anchor="middle" class="label" fill="#ffffff">Tn4401 transposon { }</text>
-  <rect x="808" y="536" width="216" height="34" rx="17" fill="#e77914"/>
-  <text x="916" y="559" text-anchor="middle" class="label" fill="#ffffff">pKPC plasmid { }</text>
-  <rect x="786" y="579" width="238" height="34" rx="17" fill="#e77914"/>
-  <text x="905" y="602" text-anchor="middle" class="label" fill="#ffffff">intI1 integron { }</text>
+  <path d="M 732 183 L 770 183" stroke="#3975dc" stroke-width="2"/>
+  <rect x="770" y="166" width="254" height="34" rx="17" fill="#3975dc"/>
+  <text x="897" y="189" text-anchor="middle" class="label" fill="#ffffff">chromosome ( )</text>
+  <path d="M 670 247 L 746 247 L 746 226 L 770 226" fill="none" stroke="#e77914" stroke-width="2"/>
+  <rect x="770" y="209" width="254" height="34" rx="17" fill="#e77914"/>
+  <text x="897" y="232" text-anchor="middle" class="label" fill="#ffffff">Tn4401 transposon { }</text>
+  <path d="M 732 554 L 770 554" stroke="#e77914" stroke-width="2"/>
+  <rect x="770" y="537" width="254" height="34" rx="17" fill="#e77914"/>
+  <text x="897" y="560" text-anchor="middle" class="label" fill="#ffffff">pKPC plasmid { }</text>
+  <path d="M 670 618 L 746 618 L 746 597 L 770 597" fill="none" stroke="#e77914" stroke-width="2"/>
+  <rect x="770" y="580" width="254" height="34" rx="17" fill="#e77914"/>
+  <text x="897" y="603" text-anchor="middle" class="label" fill="#ffffff">intI1 integron { }</text>
 
   <!-- Attribute callouts -->
-  <path d="M 748 367 L 974 367 L 974 310" fill="none" stroke="#7c8794" stroke-width="2"/>
-  <rect x="826" y="276" width="198" height="34" rx="17" fill="#687584"/>
-  <text x="925" y="299" text-anchor="middle" class="label" fill="#ffffff">host and topology</text>
-  <path d="M 748 817 L 974 817 L 974 768" fill="none" stroke="#7c8794" stroke-width="2"/>
-  <rect x="826" y="734" width="198" height="34" rx="17" fill="#687584"/>
-  <text x="925" y="757" text-anchor="middle" class="label" fill="#ffffff">type and mobility</text>
+  <path d="M 650 392 L 746 392 L 746 294 L 770 294" fill="none" stroke="#7c8794" stroke-width="2"/>
+  <rect x="770" y="277" width="254" height="34" rx="17" fill="#687584"/>
+  <text x="897" y="300" text-anchor="middle" class="label" fill="#ffffff">host and topology</text>
+  <path d="M 650 763 L 746 763 L 746 665 L 770 665" fill="none" stroke="#7c8794" stroke-width="2"/>
+  <rect x="770" y="648" width="254" height="34" rx="17" fill="#687584"/>
+  <text x="897" y="671" text-anchor="middle" class="label" fill="#ffffff">type and mobility</text>
 
   <!-- Code -->
   <g class="code">
