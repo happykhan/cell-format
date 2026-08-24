@@ -9,6 +9,8 @@ FEATURES             Location/Qualifiers
                      /mobile_element_type="transposon:Tn4401"
      CDS             30..50
                      /gene="blaKPC-2"
+     CDS             85..95
+                     /gene="coreA"
 ORIGIN
         1 aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa
        61 aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa

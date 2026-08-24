@@ -170,6 +170,10 @@ def _extract_gb_hierarchy(record) -> list[EntityNode]:  # type: ignore[no-untype
         for child in node.children:
             sort_children(child)
 
+    # Keep genes when they describe the contents of a structural entity, but
+    # omit uncontained genes rather than flattening a whole annotation into the
+    # replicon root.
+    roots = [node for node in roots if node.attributes.get("type") != "gene"]
     roots.sort(key=lambda node: int(node.attributes.get("start", "0")))
     for root in roots:
         sort_children(root)

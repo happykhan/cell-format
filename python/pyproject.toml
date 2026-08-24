@@ -27,6 +27,7 @@ dependencies = []
 genbank = ["biopython>=1.80"]
 docs = ["mkdocs-material>=9.5"]
 test = ["pytest>=8.0", "biopython>=1.80"]
+analysis = ["biopython>=1.80", "matplotlib>=3.9"]
 
 [project.scripts]
 cellgen = "cellgen.__main__:main"

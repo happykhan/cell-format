@@ -28,6 +28,7 @@ describe('GenBank conversion', () => {
     expect(chromosome.attributes.type).toBe('chromosome')
     expect(chromosome.children[0].label).toBe('Tn4401')
     expect(chromosome.children[0].children[0].label).toBe('blaKPC-2')
+    expect(chromosome.children.some(child => child.label === 'coreA')).toBe(false)
 
     expect(plasmid.kind).toBe('entity')
     expect(plasmid.attributes.type).toBe('plasmid')

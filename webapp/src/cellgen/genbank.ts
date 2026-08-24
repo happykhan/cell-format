@@ -157,9 +157,12 @@ function buildGenBankHierarchy(features: GenBankFeature[]): GenBankFeature[] {
     feature.children.sort((a, b) => a.start - b.start)
     feature.children.forEach(sort)
   }
-  roots.sort((a, b) => a.start - b.start)
-  roots.forEach(sort)
-  return roots
+  // Keep genes nested within structural entities, but omit the thousands of
+  // uncontained CDS/gene records found in a normal whole-genome annotation.
+  const structuralRoots = roots.filter(root => root.type !== 'gene')
+  structuralRoots.sort((a, b) => a.start - b.start)
+  structuralRoots.forEach(sort)
+  return structuralRoots
 }
 
 function safeLabel(label: string): string {

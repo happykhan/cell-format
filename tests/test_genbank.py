@@ -16,6 +16,7 @@ def test_multi_record_assembly_preserves_replicons_and_nesting():
     assert replicons[1].attributes["type"] == "plasmid"
     assert replicons[0].children[0].label == "Tn4401"
     assert replicons[0].children[0].children[0].label == "blaKPC-2"
+    assert all(child.label != "coreA" for child in replicons[0].children)
     assert replicons[1].children[0].label == "intI1"
     assert replicons[1].children[0].children[0].label == "blaCTX-M-15"
     assert to_cellgen(result) == (FIXTURES / "assembly.cellgen").read_text().strip()
