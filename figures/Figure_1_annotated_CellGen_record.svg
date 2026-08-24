@@ -89,47 +89,26 @@
   <!-- Panel B: circular renderer -->
   <rect x="1120" y="70" width="640" height="885" rx="14" fill="#ffffff" stroke="#d7dee7" stroke-width="2"/>
   <text x="1154" y="112" class="diagram-label" font-style="italic">Klebsiella pneumoniae</text>
-  <text x="1154" y="137" class="small">The same CellGen record rendered as a genome diagram</text>
+  <text x="1154" y="137" class="small">Direct SVG export from the CellGen circular view</text>
 
-  <!-- Chromosome circle -->
-  <circle cx="1410" cy="410" r="220" fill="#eef4fd" stroke="#3975dc" stroke-width="25" filter="url(#shadow)"/>
-  <circle cx="1410" cy="410" r="194" fill="#ffffff" stroke="#d9e5f7" stroke-width="2"/>
-  <text x="1410" y="410" text-anchor="middle" class="diagram-label" fill="#3975dc">chromosome</text>
-  <text x="1410" y="436" text-anchor="middle" class="small">circular</text>
-
-  <!-- Tn4401 and blaKPC-2 nested arcs -->
-  <path d="M 1300.0 219.5 A 220 220 0 0 1 1520.0 219.5 L 1507.5 241.2 A 195 195 0 0 0 1312.5 241.2 Z" fill="#e77914" stroke="#ffffff" stroke-width="2"/>
-  <path d="M 1342.9 194.8 A 228 228 0 0 1 1477.1 194.8 L 1469.4 219.0 A 203 203 0 0 0 1350.6 219.0 Z" fill="#d92d2d" stroke="#ffffff" stroke-width="2"/>
-  <path d="M 1300 202 L 1215 164" fill="none" stroke="#9aa5b1" stroke-width="2"/>
-  <text x="1205" y="159" text-anchor="end" class="diagram-label" fill="#c45e05">Tn4401</text>
-  <text x="1205" y="180" text-anchor="end" class="small">transposon</text>
-  <path d="M 1410 182 L 1518 146" fill="none" stroke="#9aa5b1" stroke-width="2"/>
-  <text x="1528" y="142" class="diagram-label" fill="#b52525">blaKPC-2</text>
-  <text x="1528" y="163" class="small">gene</text>
-
-  <!-- Plasmid -->
-  <circle cx="1505" cy="770" r="105" fill="#eef8ee" stroke="#3a9943" stroke-width="15" filter="url(#shadow)"/>
-  <circle cx="1505" cy="770" r="88" fill="#ffffff" stroke="#d9eadb" stroke-width="2"/>
-  <text x="1505" y="766" text-anchor="middle" class="diagram-label" fill="#31823a">pKPC</text>
-  <text x="1505" y="789" text-anchor="middle" class="small">conjugative plasmid</text>
-
-  <!-- intI1 and blaCTX-M-15 nested arcs -->
-  <path d="M 1452.5 679.1 A 105 105 0 0 1 1557.5 679.1 L 1549.0 693.8 A 88 88 0 0 0 1461.0 693.8 Z" fill="#e77914" stroke="#ffffff" stroke-width="2"/>
-  <path d="M 1472.5 664.9 A 110 110 0 0 1 1537.5 664.9 L 1530.4 687.0 A 87 87 0 0 0 1479.6 687.0 Z" fill="#d92d2d" stroke="#ffffff" stroke-width="2"/>
-  <path d="M 1454 674 L 1360 645" fill="none" stroke="#9aa5b1" stroke-width="2"/>
-  <text x="1350" y="641" text-anchor="end" class="diagram-label" fill="#c45e05">intI1</text>
-  <text x="1350" y="662" text-anchor="end" class="small">integron</text>
-  <path d="M 1505 658 L 1596 626" fill="none" stroke="#9aa5b1" stroke-width="2"/>
-  <text x="1606" y="622" class="diagram-label" fill="#b52525">blaCTX-M-15</text>
-  <text x="1606" y="643" class="small">gene</text>
-
-  <!-- Visual key -->
-  <line x1="1160" y1="890" x2="1210" y2="890" stroke="#3975dc" stroke-width="12" stroke-linecap="round"/>
-  <text x="1225" y="896" class="small">chromosome</text>
-  <line x1="1360" y1="890" x2="1410" y2="890" stroke="#3a9943" stroke-width="12" stroke-linecap="round"/>
-  <text x="1425" y="896" class="small">plasmid</text>
-  <line x1="1545" y1="890" x2="1595" y2="890" stroke="#e77914" stroke-width="12" stroke-linecap="round"/>
-  <text x="1610" y="896" class="small">contained entity</text>
-  <line x1="1160" y1="925" x2="1210" y2="925" stroke="#d92d2d" stroke-width="12" stroke-linecap="round"/>
-  <text x="1225" y="931" class="small">gene</text>
+  <!-- Unmodified SVG output exported from cell-format.vercel.app -->
+  <svg x="1238" y="160" width="404" height="746" viewBox="479.8 163.1 328.0 606.0" preserveAspectRatio="xMidYMid meet" style="background:white">
+    <circle cx="624.5" cy="624.5" r="90" fill="#dde8f8" stroke="#3a6fba" stroke-width="8"/>
+    <path d="M 595.17,522.59 A 106.00,106.00 0 0,1 653.75,522.59 L 649.33,537.97 A 90.00,90.00 0 0,0 599.59,537.97 Z" fill="#e05252" stroke="white" stroke-width="0.5"/>
+    <path d="M 591.19,508.75 A 120.40,120.40 0 0,1 654.83,507.95 L 651.20,521.89 A 106.00,106.00 0 0,0 595.17,522.59 Z" fill="#c0392b" stroke="white" stroke-width="0.5"/>
+    <line x1="623.0" y1="504.1" x2="734.5" y2="503.8" stroke="#bbb" stroke-width="0.7"/>
+    <text x="737.5" y="507.8" text-anchor="start" font-size="10" fill="#444" font-family="Inter, Arial, sans-serif">blaKPC-2</text>
+    <line x1="624.5" y1="518.5" x2="734.5" y2="518.8" stroke="#bbb" stroke-width="0.7"/>
+    <text x="737.5" y="522.8" text-anchor="start" font-size="11" fill="#444" font-family="Inter, Arial, sans-serif">Tn4401</text>
+    <text x="624.5" y="629.5" text-anchor="middle" font-size="15" fill="#333" font-family="Inter, Arial, sans-serif">chromosome</text>
+    <circle cx="624.5" cy="259.1" r="44" fill="#e6f5e6" stroke="#3a9943" stroke-width="5"/>
+    <path d="M 609.54,207.20 A 54.00,54.00 0 0,1 639.38,207.20 L 636.62,216.81 A 44.00,44.00 0 0,0 612.30,216.81 Z" fill="#9b59b6" stroke="white" stroke-width="0.5"/>
+    <path d="M 607.05,198.55 A 63.00,63.00 0 0,1 640.35,198.14 L 638.08,206.85 A 54.00,54.00 0 0,0 609.54,207.20 Z" fill="#c0392b" stroke="white" stroke-width="0.5"/>
+    <line x1="623.7" y1="196.1" x2="688.5" y2="193.1" stroke="#bbb" stroke-width="0.7"/>
+    <text x="691.5" y="197.1" text-anchor="start" font-size="10" fill="#444" font-family="Inter, Arial, sans-serif">blaCTX-M-15</text>
+    <line x1="624.5" y1="205.1" x2="688.5" y2="208.1" stroke="#bbb" stroke-width="0.7"/>
+    <text x="691.5" y="212.1" text-anchor="start" font-size="11" fill="#444" font-family="Inter, Arial, sans-serif">intI1</text>
+    <text x="624.5" y="263.1" text-anchor="middle" font-size="11" fill="#333" font-family="Inter, Arial, sans-serif">pKPC</text>
+  </svg>
+  <text x="1440" y="930" text-anchor="middle" class="small">The circular panel is the renderer output, not a redrawn schematic.</text>
 </svg>

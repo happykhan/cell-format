@@ -48,8 +48,21 @@ function esc(s: string): string {
 
 class SVGBuilder {
   private parts: string[] = []
+  private minX = Number.POSITIVE_INFINITY
+  private minY = Number.POSITIVE_INFINITY
+  private maxX = Number.NEGATIVE_INFINITY
+  private maxY = Number.NEGATIVE_INFINITY
+
+  private include(x0: number, y0: number, x1: number, y1: number): void {
+    this.minX = Math.min(this.minX, x0)
+    this.minY = Math.min(this.minY, y0)
+    this.maxX = Math.max(this.maxX, x1)
+    this.maxY = Math.max(this.maxY, y1)
+  }
 
   circle(cx: number, cy: number, r: number, fill: string, stroke: string, sw: number): void {
+    const extent = r + sw / 2
+    this.include(cx - extent, cy - extent, cx + extent, cy + extent)
     this.parts.push(
       `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" ` +
       `fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`,
@@ -61,6 +74,8 @@ class SVGBuilder {
     fill: string, deg: number,
     stroke = '', sw = 0,
   ): void {
+    const extent = Math.hypot(w, h) / 2 + sw / 2
+    this.include(cx - extent, cy - extent, cx + extent, cy + extent)
     const strokeAttr = stroke ? ` stroke="${stroke}" stroke-width="${sw}"` : ''
     this.parts.push(
       `<rect x="${(cx - w / 2).toFixed(1)}" y="${(cy - h / 2).toFixed(1)}" ` +
@@ -70,6 +85,9 @@ class SVGBuilder {
   }
 
   text(x: number, y: number, content: string, size = 13, anchor = 'middle', fill = '#333'): void {
+    const width = content.length * size * 0.58
+    const x0 = anchor === 'start' ? x : anchor === 'end' ? x - width : x - width / 2
+    this.include(x0, y - size, x0 + width, y + size * 0.3)
     this.parts.push(
       `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" ` +
       `font-size="${size}" fill="${fill}" font-family="${FONT}">${esc(content)}</text>`,
@@ -77,6 +95,7 @@ class SVGBuilder {
   }
 
   arc(cx: number, cy: number, outerR: number, innerR: number, a0: number, a1: number, fill: string, stroke = '', sw = 0): void {
+    this.include(cx - outerR - sw / 2, cy - outerR - sw / 2, cx + outerR + sw / 2, cy + outerR + sw / 2)
     const cos0 = Math.cos(a0), sin0 = Math.sin(a0)
     const cos1 = Math.cos(a1), sin1 = Math.sin(a1)
     const large = (a1 - a0) > Math.PI ? 1 : 0
@@ -92,6 +111,7 @@ class SVGBuilder {
   }
 
   line(x1: number, y1: number, x2: number, y2: number, stroke = '#ccc', sw = 1.5, dash = ''): void {
+    this.include(Math.min(x1, x2) - sw / 2, Math.min(y1, y2) - sw / 2, Math.max(x1, x2) + sw / 2, Math.max(y1, y2) + sw / 2)
     const da = dash ? ` stroke-dasharray="${dash}"` : ''
     this.parts.push(
       `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" ` +
@@ -101,10 +121,16 @@ class SVGBuilder {
   }
 
   toSVG(width: number, height: number): string {
+    const cropPadding = 24
+    const hasContent = Number.isFinite(this.minX)
+    const viewX = hasContent ? this.minX - cropPadding : 0
+    const viewY = hasContent ? this.minY - cropPadding : 0
+    const outputWidth = hasContent ? this.maxX - this.minX + cropPadding * 2 : width
+    const outputHeight = hasContent ? this.maxY - this.minY + cropPadding * 2 : height
     return (
       `<svg xmlns="http://www.w3.org/2000/svg" ` +
-      `width="${Math.round(width)}" height="${Math.round(height)}" ` +
-      `viewBox="0 0 ${Math.round(width)} ${Math.round(height)}" ` +
+      `width="${Math.round(outputWidth)}" height="${Math.round(outputHeight)}" ` +
+      `viewBox="${viewX.toFixed(1)} ${viewY.toFixed(1)} ${outputWidth.toFixed(1)} ${outputHeight.toFixed(1)}" ` +
       `style="background:white">\n  ` +
       this.parts.join('\n  ') +
       '\n</svg>'

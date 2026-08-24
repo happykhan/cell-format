@@ -70,12 +70,19 @@ describe('renderSVG', () => {
     expect(out).toContain('stroke-dasharray')  // dashed separator
   })
 
-  it('width increases with more replicons', () => {
+  it('canvas grows to include additional replicons', () => {
     const single = svg('()chr1')
     const withPlasmid = svg('()chr1,{}pBAD')
-    const wSingle = parseInt(single.match(/width="(\d+)"/)?.[1] ?? '0')
-    const wDouble = parseInt(withPlasmid.match(/width="(\d+)"/)?.[1] ?? '0')
-    expect(wDouble).toBeGreaterThan(wSingle)
+    const hSingle = parseInt(single.match(/height="(\d+)"/)?.[1] ?? '0')
+    const hDouble = parseInt(withPlasmid.match(/height="(\d+)"/)?.[1] ?? '0')
+    expect(hDouble).toBeGreaterThan(hSingle)
+  })
+
+  it('uses a tight viewBox around rendered content', () => {
+    const out = svg('({{}blaKPC-2[type="gene"]}Tn4401[type="transposon"])chromosome,{{{}blaCTX-M-15[type="gene"]}intI1[type="integron"]}pKPC')
+    const width = parseInt(out.match(/width="(\d+)"/)?.[1] ?? '0')
+    expect(width).toBeLessThan(700)
+    expect(out).not.toContain('viewBox="0 0')
   })
 
   it('returns empty SVG for empty cell set', () => {
