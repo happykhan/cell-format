@@ -1,17 +1,17 @@
 /**
- * Unit tests for the Wolvercote serialiser.
+ * Unit tests for the CellGen serialiser.
  */
 import { describe, it, expect } from 'vitest'
-import { parseWolvercote } from '../wolvercote/parser'
-import { to_wolvercote } from '../wolvercote/serialise'
+import { parseCellGen } from '../cellgen/parser'
+import { toCellGen } from '../cellgen/serialise'
 
 function roundTrip(input: string) {
-  const result = parseWolvercote(input)
+  const result = parseCellGen(input)
   if (!result.ok) throw new Error(result.error.message)
-  return to_wolvercote(result.value)
+  return toCellGen(result.value)
 }
 
-describe('to_wolvercote', () => {
+describe('toCellGen', () => {
   it('serialises a lone chromosome', () => {
     expect(roundTrip('()chr1')).toContain('()chr1')
   })
@@ -22,14 +22,14 @@ describe('to_wolvercote', () => {
     expect(out).toContain('{}pBAD')
   })
 
-  it('preserves nested MGEs inside chromosome', () => {
+  it('preserves nested entities inside chromosome', () => {
     const out = roundTrip('({}Tn3)chromosome')
     expect(out).toContain('{}Tn3')
     expect(out).toContain('(')
     expect(out).toContain('chromosome')
   })
 
-  it('preserves deeply nested MGEs', () => {
+  it('preserves deeply nested entities', () => {
     const out = roundTrip('{ { {}blaKPC-2 }Tn4401 }pKpQIL')
     expect(out).toContain('blaKPC-2')
     expect(out).toContain('Tn4401')

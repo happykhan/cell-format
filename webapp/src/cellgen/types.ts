@@ -2,24 +2,24 @@ export interface Attributes {
   [key: string]: string
 }
 
-export interface MGENode {
-  kind: 'mge'
+export interface EntityNode {
+  kind: 'entity'
   label: string
-  children: MGENode[]
+  children: EntityNode[]
   attributes: Attributes
 }
 
 export interface ChromosomeNode {
   kind: 'chromosome'
   label: string
-  children: MGENode[]
+  children: EntityNode[]
   attributes: Attributes
 }
 
-export type Replicon = ChromosomeNode | MGENode
+export type CellularElement = ChromosomeNode | EntityNode
 
 export interface Cell {
-  replicons: Replicon[]
+  replicons: CellularElement[]
 }
 
 export interface CellSet {
@@ -27,9 +27,14 @@ export interface CellSet {
 }
 
 export interface ParseError {
+  code: string
   message: string
   position: number
+  line: number
+  column: number
   found: string
+  expected: string
+  context: string
 }
 
 export type ParseResult =

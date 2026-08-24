@@ -1,10 +1,10 @@
 """
-SVG renderer for Wolvercote CellSet objects.
+SVG renderer for CellGen CellSet objects.
 
-Produces circular diagrams matching the Wolvercote spec sample images:
+Produces circular diagrams matching the CellGen spec sample images:
   - Chromosomes: large blue circles
-  - Plasmids / other MGEs: smaller green circles, positioned top-right of chromosome
-  - Nested MGEs: coloured rectangles on the parent circle border
+  - Plasmids / other ENTITYs: smaller green circles, positioned top-right of chromosome
+  - Nested ENTITYs: coloured rectangles on the parent circle border
   - Labels: inside chromosomes, above plasmids
   - Multiple cells: laid out side by side with a dashed separator
 """
@@ -12,20 +12,20 @@ Produces circular diagrams matching the Wolvercote spec sample images:
 from __future__ import annotations
 import math
 import xml.etree.ElementTree as ET
-from .types import Cell, CellSet, ChromosomeNode, MGENode
+from .types import Cell, CellSet, ChromosomeNode, EntityNode
 
 CHR_FILL = "#dde8f8"
 CHR_STROKE = "#3a6fba"
 CHR_STROKE_W = 8
 
-MGE_FILL = "#e6f5e6"
-MGE_STROKE = "#3a9943"
-MGE_STROKE_W = 5
+ENTITY_FILL = "#e6f5e6"
+ENTITY_STROKE = "#3a9943"
+ENTITY_STROKE_W = 5
 
 ELEMENT_COLOURS = ["#e05252", "#9b59b6", "#f39c12", "#16a085", "#2980b9", "#e74c3c"]
 
 CHR_R = 90.0
-MGE_R = 44.0
+ENTITY_R = 44.0
 PAD = 24.0
 LABEL_FONT = "Inter, Arial, sans-serif"
 
@@ -91,7 +91,7 @@ class _SVGBuilder:
         )
 
 
-def _render_nested(elements: list[MGENode], px: float, py: float, pr: float,
+def _render_nested(elements: list[EntityNode], px: float, py: float, pr: float,
                    svg: _SVGBuilder, start_angle: float = -math.pi / 2) -> None:
     n = len(elements)
     for i, el in enumerate(elements):
@@ -111,27 +111,27 @@ def _render_nested(elements: list[MGENode], px: float, py: float, pr: float,
 def _measure_cell(cell: Cell) -> tuple[float, float]:
     """Return (width, height) needed for this cell."""
     chrs = [r for r in cell.replicons if isinstance(r, ChromosomeNode)]
-    mges = [r for r in cell.replicons if isinstance(r, MGENode)]
+    entities = [r for r in cell.replicons if isinstance(r, EntityNode)]
 
     n_chr = max(len(chrs), 1)
-    n_mge = len(mges)
+    n_entity = len(entities)
 
     # Height: tallest column
     chr_col_h = n_chr * (CHR_R * 2 + PAD) + PAD + 30
-    mge_col_h = n_mge * (MGE_R * 2 + PAD + 30) + PAD + 30 if n_mge else 0
-    height = max(chr_col_h, mge_col_h, CHR_R * 2 + PAD * 2 + 60)
+    entity_col_h = n_entity * (ENTITY_R * 2 + PAD + 30) + PAD + 30 if n_entity else 0
+    height = max(chr_col_h, entity_col_h, CHR_R * 2 + PAD * 2 + 60)
 
-    # Width: chr column + mge column (if any)
+    # Width: chr column + entity column (if any)
     chr_col_w = CHR_R * 2 + PAD * 2
-    mge_col_w = (MGE_R * 2 + PAD * 2 + 50) if n_mge else 0
-    width = chr_col_w + mge_col_w + PAD
+    entity_col_w = (ENTITY_R * 2 + PAD * 2 + 50) if n_entity else 0
+    width = chr_col_w + entity_col_w + PAD
 
     return width, height
 
 
 def _render_cell(cell: Cell, ox: float, oy: float, height: float, svg: _SVGBuilder) -> float:
     chrs = [r for r in cell.replicons if isinstance(r, ChromosomeNode)]
-    mges = [r for r in cell.replicons if isinstance(r, MGENode)]
+    entities = [r for r in cell.replicons if isinstance(r, EntityNode)]
 
     # Chromosome column
     n_chr = max(len(chrs), 1)
@@ -149,22 +149,22 @@ def _render_cell(cell: Cell, ox: float, oy: float, height: float, svg: _SVGBuild
                          ch.label, size=15, fill="#333")
             _render_nested(ch.children, cx, cy, CHR_R, svg)
 
-    # MGE column (right of chromosomes)
-    mge_col_x = ox + chr_col_w + PAD
+    # ENTITY column (right of chromosomes)
+    entity_col_x = ox + chr_col_w + PAD
 
-    if mges:
-        total_mge_h = len(mges) * MGE_R * 2 + (len(mges) - 1) * PAD
-        label_space = len(mges) * 30  # space for labels above
-        start_my = oy + (height - total_mge_h - label_space) / 2 + 30
-        for i, mge in enumerate(mges):
-            mx = mge_col_x + MGE_R + PAD
-            my = start_my + i * (MGE_R * 2 + PAD + 30) + MGE_R
-            svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_STROKE_W)
-            if mge.label:
-                svg.text(mx, my - MGE_R - 10, mge.label, size=13, fill="#333")
-            _render_nested(mge.children, mx, my, MGE_R, svg)
+    if entities:
+        total_entity_h = len(entities) * ENTITY_R * 2 + (len(entities) - 1) * PAD
+        label_space = len(entities) * 30  # space for labels above
+        start_my = oy + (height - total_entity_h - label_space) / 2 + 30
+        for i, entity in enumerate(entities):
+            mx = entity_col_x + ENTITY_R + PAD
+            my = start_my + i * (ENTITY_R * 2 + PAD + 30) + ENTITY_R
+            svg.circle(mx, my, ENTITY_R, ENTITY_FILL, ENTITY_STROKE, ENTITY_STROKE_W)
+            if entity.label:
+                svg.text(mx, my - ENTITY_R - 10, entity.label, size=13, fill="#333")
+            _render_nested(entity.children, mx, my, ENTITY_R, svg)
 
-        return mge_col_x + MGE_R * 2 + PAD * 2 + 50
+        return entity_col_x + ENTITY_R * 2 + PAD * 2 + 50
 
     return ox + chr_col_w + PAD
 

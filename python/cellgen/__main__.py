@@ -1,28 +1,28 @@
-"""Command-line interface for the wolvercote package."""
+"""Command-line interface for the cellgen package."""
 from __future__ import annotations
 import argparse
 import sys
-from . import parse, validate, render_svg, to_wolvercote
+from . import parse, validate, render_svg, to_cellgen
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="wolvercote",
-        description="Parse, validate, and render Wolvercote format strings.",
+        prog="cellgen",
+        description="Parse, validate, and render CellGen format strings.",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
     # validate
-    p_val = sub.add_parser("validate", help="Check if a Wolvercote string is valid")
-    p_val.add_argument("string", help="Wolvercote format string")
+    p_val = sub.add_parser("validate", help="Check if a CellGen string is valid")
+    p_val.add_argument("string", help="CellGen format string")
 
     # render
-    p_svg = sub.add_parser("render", help="Render a Wolvercote string to SVG")
-    p_svg.add_argument("string", help="Wolvercote format string")
+    p_svg = sub.add_parser("render", help="Render a CellGen string to SVG")
+    p_svg.add_argument("string", help="CellGen format string")
     p_svg.add_argument("-o", "--output", default="-", help="Output file (default: stdout)")
 
     # convert from GenBank / GFF
-    p_conv = sub.add_parser("convert", help="Convert GenBank or GFF3 → Wolvercote string")
+    p_conv = sub.add_parser("convert", help="Convert GenBank or GFF3 → CellGen string")
     p_conv.add_argument("file", help="GenBank (.gb/.gbk) or GFF3 (.gff/.gff3) file")
     p_conv.add_argument("--svg", help="Also render SVG to this file")
     p_conv.add_argument("--mobsuite", action="store_true",
@@ -69,7 +69,7 @@ def main() -> None:
             else:
                 print(f"Unknown file extension '{ext}'. Use .gb, .gbk, .gff, or .gff3.", file=sys.stderr)
                 sys.exit(1)
-        wstr = to_wolvercote(cell_set)
+        wstr = to_cellgen(cell_set)
         print(wstr)
         if args.svg:
             svg = render_svg(cell_set)

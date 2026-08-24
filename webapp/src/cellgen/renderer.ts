@@ -1,25 +1,25 @@
 /**
- * Wolvercote SVG renderer.
- * Produces circular diagrams matching the Wolvercote spec sample image style.
+ * CellGen SVG renderer.
+ * Produces circular diagrams matching the CellGen spec sample image style.
  */
 
-import type { Cell, CellSet, ChromosomeNode, MGENode } from './types'
+import type { Cell, CellSet, ChromosomeNode, EntityNode } from './types'
 
 const CHR_FILL = '#dde8f8'
 const CHR_STROKE = '#3a6fba'
 const CHR_SW = 8
 
-const MGE_FILL = '#e6f5e6'
-const MGE_STROKE = '#3a9943'
-const MGE_SW = 5
+const ENTITY_FILL = '#e6f5e6'
+const ENTITY_STROKE = '#3a9943'
+const ENTITY_SW = 5
 
 const CHR_R = 90
-const MGE_R = 44
+const ENTITY_R = 44
 const PAD = 24
 const FONT = 'Inter, Arial, sans-serif'
 
 const ARC_BAND_CHR = 16   // radial thickness of the outermost arc band on chromosomes
-const ARC_BAND_MGE = 10   // radial thickness of the outermost arc band on MGE circles
+const ARC_BAND_ENTITY = 10   // radial thickness of the outermost arc band on ENTITY circles
 const ARC_TAPER = 0.90    // each deeper nesting level is this fraction narrower (10% reduction)
 const ARC_HALF = 0.28     // half-width of each depth-0 arc marker (radians ≈ 16°)
 
@@ -28,8 +28,10 @@ const TYPE_COLOURS: Record<string, string> = {
   integron: '#9b59b6',
   insertion_sequence: '#f39c12',
   phage: '#16a085',
+  starship: '#6c5ce7',
   gene: '#c0392b',
-  plasmid: MGE_STROKE,
+  gene_cluster: '#d35400',
+  plasmid: ENTITY_STROKE,
   element: '#aaaaaa',
   other: '#888888',
 }
@@ -46,8 +48,21 @@ function esc(s: string): string {
 
 class SVGBuilder {
   private parts: string[] = []
+  private minX = Number.POSITIVE_INFINITY
+  private minY = Number.POSITIVE_INFINITY
+  private maxX = Number.NEGATIVE_INFINITY
+  private maxY = Number.NEGATIVE_INFINITY
+
+  private include(x0: number, y0: number, x1: number, y1: number): void {
+    this.minX = Math.min(this.minX, x0)
+    this.minY = Math.min(this.minY, y0)
+    this.maxX = Math.max(this.maxX, x1)
+    this.maxY = Math.max(this.maxY, y1)
+  }
 
   circle(cx: number, cy: number, r: number, fill: string, stroke: string, sw: number): void {
+    const extent = r + sw / 2
+    this.include(cx - extent, cy - extent, cx + extent, cy + extent)
     this.parts.push(
       `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r}" ` +
       `fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`,
@@ -59,6 +74,8 @@ class SVGBuilder {
     fill: string, deg: number,
     stroke = '', sw = 0,
   ): void {
+    const extent = Math.hypot(w, h) / 2 + sw / 2
+    this.include(cx - extent, cy - extent, cx + extent, cy + extent)
     const strokeAttr = stroke ? ` stroke="${stroke}" stroke-width="${sw}"` : ''
     this.parts.push(
       `<rect x="${(cx - w / 2).toFixed(1)}" y="${(cy - h / 2).toFixed(1)}" ` +
@@ -68,6 +85,9 @@ class SVGBuilder {
   }
 
   text(x: number, y: number, content: string, size = 13, anchor = 'middle', fill = '#333'): void {
+    const width = content.length * size * 0.58
+    const x0 = anchor === 'start' ? x : anchor === 'end' ? x - width : x - width / 2
+    this.include(x0, y - size, x0 + width, y + size * 0.3)
     this.parts.push(
       `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" ` +
       `font-size="${size}" fill="${fill}" font-family="${FONT}">${esc(content)}</text>`,
@@ -75,6 +95,7 @@ class SVGBuilder {
   }
 
   arc(cx: number, cy: number, outerR: number, innerR: number, a0: number, a1: number, fill: string, stroke = '', sw = 0): void {
+    this.include(cx - outerR - sw / 2, cy - outerR - sw / 2, cx + outerR + sw / 2, cy + outerR + sw / 2)
     const cos0 = Math.cos(a0), sin0 = Math.sin(a0)
     const cos1 = Math.cos(a1), sin1 = Math.sin(a1)
     const large = (a1 - a0) > Math.PI ? 1 : 0
@@ -90,6 +111,7 @@ class SVGBuilder {
   }
 
   line(x1: number, y1: number, x2: number, y2: number, stroke = '#ccc', sw = 1.5, dash = ''): void {
+    this.include(Math.min(x1, x2) - sw / 2, Math.min(y1, y2) - sw / 2, Math.max(x1, x2) + sw / 2, Math.max(y1, y2) + sw / 2)
     const da = dash ? ` stroke-dasharray="${dash}"` : ''
     this.parts.push(
       `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" ` +
@@ -99,10 +121,16 @@ class SVGBuilder {
   }
 
   toSVG(width: number, height: number): string {
+    const cropPadding = 24
+    const hasContent = Number.isFinite(this.minX)
+    const viewX = hasContent ? this.minX - cropPadding : 0
+    const viewY = hasContent ? this.minY - cropPadding : 0
+    const outputWidth = hasContent ? this.maxX - this.minX + cropPadding * 2 : width
+    const outputHeight = hasContent ? this.maxY - this.minY + cropPadding * 2 : height
     return (
       `<svg xmlns="http://www.w3.org/2000/svg" ` +
-      `width="${Math.round(width)}" height="${Math.round(height)}" ` +
-      `viewBox="0 0 ${Math.round(width)} ${Math.round(height)}" ` +
+      `width="${Math.round(outputWidth)}" height="${Math.round(outputHeight)}" ` +
+      `viewBox="${viewX.toFixed(1)} ${viewY.toFixed(1)} ${outputWidth.toFixed(1)} ${outputHeight.toFixed(1)}" ` +
       `style="background:white">\n  ` +
       this.parts.join('\n  ') +
       '\n</svg>'
@@ -119,7 +147,7 @@ function arcAnchor(angle: number): string {
 }
 
 /** Total outward extent of arc bands for a subtree at a given initial band width. */
-function totalBandExtent(elements: MGENode[], bandW: number): number {
+function totalBandExtent(elements: EntityNode[], bandW: number): number {
   if (!elements.length || bandW < 3) return 0
   const childExtent = Math.max(0, ...elements.map(el =>
     el.children.length ? totalBandExtent(el.children, bandW * ARC_TAPER) : 0
@@ -139,7 +167,7 @@ interface LabelSpec {
  * arcInnerR / bandW / a0..a1 describe el's own arc.
  */
 function collectSubtreeLabels(
-  el: MGENode,
+  el: EntityNode,
   arcInnerR: number,
   bandW: number,
   a0: number,
@@ -168,7 +196,7 @@ function collectSubtreeLabels(
 
 /** Draw arcs for child elements — labels are handled by the fan in renderArcs. */
 function renderNestedArcs(
-  elements: MGENode[],
+  elements: EntityNode[],
   cx: number, cy: number,
   innerR: number, bandW: number,
   a0: number, a1: number,
@@ -200,7 +228,7 @@ function renderNestedArcs(
  *             left for left arcs), with diagonal spokes to each label.
  */
 function renderArcs(
-  elements: MGENode[],
+  elements: EntityNode[],
   cx: number, cy: number,
   baseR: number, bandW: number,
   svg: SVGBuilder,
@@ -283,74 +311,67 @@ function renderArcs(
 /** Radial extent of arc bands + label spoke + text clearance from a circle edge. */
 const LABEL_CLEAR = 150
 
-function arcLabelExtent(children: MGENode[], band: number): number {
+function arcLabelExtent(children: EntityNode[], band: number): number {
   if (!children.length) return 0
   return band + totalBandExtent(children, band * ARC_TAPER) + 14 + LABEL_CLEAR
 }
 
-interface CellLayout { chrRingR: number; mgeRingR: number; totalR: number }
+interface CellLayout { chrRingR: number; entityRingR: number; totalR: number }
 
 /**
  * Compute ring radii for a cell.
  * – Chromosomes occupy an inner ring (radius 0 when there is only one).
- * – MGEs orbit in an outer ring, spaced to avoid overlap.
+ * – ENTITYs orbit in an outer ring, spaced to avoid overlap.
  */
 function computeCellLayout(cell: Cell): CellLayout {
   const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
-  const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
+  const entities = cell.replicons.filter((r): r is EntityNode => r.kind === 'entity')
   const nChr = chrs.length
-  const nMge = mges.length
+  const nEntity = entities.length
 
   // Chromosome ring radius (0 for a single chromosome placed at the cell centre)
   const chrRingR = nChr > 1 ? (CHR_R + PAD / 2) / Math.sin(Math.PI / nChr) : 0
-
-  // Farthest physical extent of chr circles + arc bands (from cell centre)
-  const chrBandExt = nChr > 0
-    ? chrs.reduce((mx, ch) =>
-        Math.max(mx, ch.children.length ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) : 0), 0)
-    : 0
-  const chrPhysOuterR = nChr > 0 ? chrRingR + CHR_R + chrBandExt : 0
 
   // Farthest label reach from chr arcs (from cell centre)
   const chrLabelOuterR = nChr > 0
     ? chrRingR + CHR_R + chrs.reduce((mx, ch) => Math.max(mx, arcLabelExtent(ch.children, ARC_BAND_CHR)), 0)
     : 0
 
-  // MGE ring
-  let mgeRingR = 0
-  let mgePhysOuterR = 0
-  let mgeLabelOuterR = 0
+  // ENTITY ring
+  let entityRingR = 0
+  let entityPhysOuterR = 0
+  let entityLabelOuterR = 0
 
-  if (nMge > 0) {
-    const baseR = (nChr > 0 ? chrLabelOuterR + PAD : 0) + MGE_R
-    const minNonOverlap = nMge > 1 ? (MGE_R + PAD / 2) / Math.sin(Math.PI / nMge) : 0
-    mgeRingR = Math.max(baseR, minNonOverlap)
+  if (nEntity > 0) {
+    const baseR = (nChr > 0 ? chrLabelOuterR + PAD : 0) + ENTITY_R
+    const minNonOverlap = nEntity > 1 ? (ENTITY_R + PAD / 2) / Math.sin(Math.PI / nEntity) : 0
+    entityRingR = Math.max(baseR, minNonOverlap)
 
-    const mgeBandExt = mges.reduce((mx, mge) =>
-      Math.max(mx, mge.children.length ? ARC_BAND_MGE + totalBandExtent(mge.children, ARC_BAND_MGE * ARC_TAPER) : 0), 0)
-    const mgeLabelExt = mges.reduce((mx, mge) => Math.max(mx, arcLabelExtent(mge.children, ARC_BAND_MGE)), 0)
+    const entityBandExt = entities.reduce((mx, entity) =>
+      Math.max(mx, entity.children.length ? ARC_BAND_ENTITY + totalBandExtent(entity.children, ARC_BAND_ENTITY * ARC_TAPER) : 0), 0)
+    const entityLabelExt = entities.reduce((mx, entity) => Math.max(mx, arcLabelExtent(entity.children, ARC_BAND_ENTITY)), 0)
 
-    mgePhysOuterR = mgeRingR + MGE_R + mgeBandExt
-    mgeLabelOuterR = mgeRingR + MGE_R + mgeLabelExt
+    entityPhysOuterR = entityRingR + ENTITY_R + entityBandExt
+    entityLabelOuterR = entityRingR + ENTITY_R + entityLabelExt
   }
 
   const totalR = Math.max(
     chrLabelOuterR,
-    nMge > 0 ? mgePhysOuterR + 20 : 0,
-    mgeLabelOuterR,
+    nEntity > 0 ? entityPhysOuterR + 20 : 0,
+    entityLabelOuterR,
     CHR_R + 20,
   )
 
-  return { chrRingR, mgeRingR, totalR }
+  return { chrRingR, entityRingR, totalR }
 }
 
 /** Render one cell centred at (cx, cy). */
 function renderCell(cell: Cell, cx: number, cy: number, svg: SVGBuilder): void {
-  const { chrRingR, mgeRingR } = computeCellLayout(cell)
+  const { chrRingR, entityRingR } = computeCellLayout(cell)
   const chrs = cell.replicons.filter((r): r is ChromosomeNode => r.kind === 'chromosome')
-  const mges = cell.replicons.filter((r): r is MGENode => r.kind === 'mge')
+  const entities = cell.replicons.filter((r): r is EntityNode => r.kind === 'entity')
   const nChr = chrs.length
-  const nMge = mges.length
+  const nEntity = entities.length
 
   // Chromosomes — inner ring (single chr sits at cell centre)
   chrs.forEach((ch, i) => {
@@ -362,14 +383,14 @@ function renderCell(cell: Cell, cx: number, cy: number, svg: SVGBuilder): void {
     if (ch.label) svg.text(ccx, ccy + 5, ch.label, 15)
   })
 
-  // MGEs — outer ring; arc markers face outward from the cell centre
-  mges.forEach((mge, i) => {
-    const angle = nMge > 1 ? -Math.PI / 2 + (2 * Math.PI * i) / nMge : -Math.PI / 2
-    const mx = cx + mgeRingR * Math.cos(angle)
-    const my = cy + mgeRingR * Math.sin(angle)
-    svg.circle(mx, my, MGE_R, MGE_FILL, MGE_STROKE, MGE_SW)
-    renderArcs(mge.children, mx, my, MGE_R, ARC_BAND_MGE, svg, angle)
-    if (mge.label) svg.text(mx, my + 4, mge.label, 11)
+  // ENTITYs — outer ring; arc markers face outward from the cell centre
+  entities.forEach((entity, i) => {
+    const angle = nEntity > 1 ? -Math.PI / 2 + (2 * Math.PI * i) / nEntity : -Math.PI / 2
+    const mx = cx + entityRingR * Math.cos(angle)
+    const my = cy + entityRingR * Math.sin(angle)
+    svg.circle(mx, my, ENTITY_R, ENTITY_FILL, ENTITY_STROKE, ENTITY_SW)
+    renderArcs(entity.children, mx, my, ENTITY_R, ARC_BAND_ENTITY, svg, angle)
+    if (entity.label) svg.text(mx, my + 4, entity.label, 11)
   })
 }
 

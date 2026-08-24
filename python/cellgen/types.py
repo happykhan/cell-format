@@ -7,9 +7,9 @@ Attributes = dict[str, str]
 
 
 @dataclass
-class MGENode:
+class EntityNode:
     label: str
-    children: list[MGENode] = field(default_factory=list)
+    children: list[EntityNode] = field(default_factory=list)
     attributes: Attributes = field(default_factory=dict)
     size_bp: Optional[int] = None  # genomic size, if known
 
@@ -17,17 +17,17 @@ class MGENode:
 @dataclass
 class ChromosomeNode:
     label: str
-    children: list[MGENode] = field(default_factory=list)
+    children: list[EntityNode] = field(default_factory=list)
     attributes: Attributes = field(default_factory=dict)
     size_bp: Optional[int] = None
 
 
-Replicon = ChromosomeNode | MGENode
+CellularElement = ChromosomeNode | EntityNode
 
 
 @dataclass
 class Cell:
-    replicons: list[Replicon]
+    replicons: list[CellularElement]
 
 
 @dataclass

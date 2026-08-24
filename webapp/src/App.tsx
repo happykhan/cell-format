@@ -1,9 +1,11 @@
 import { useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { FileUpload, ThemeToggle } from '@genomicx/ui'
-import { parseWolvercote } from './wolvercote/parser'
-import { renderSVG } from './wolvercote/renderer'
-import { parseGenBank, parseGFF, detectFileType } from './wolvercote/genbank'
+import { FileUpload } from './components/FileUpload'
+import { ThemeToggle } from './components/ThemeToggle'
+import { parseCellGen } from './cellgen/parser'
+import { renderSVG } from './cellgen/renderer'
+import { renderContainmentSVG } from './cellgen/containmentRenderer'
+import { parseGenBank, parseGFF, detectFileType } from './cellgen/genbank'
 import { InteractiveBuilder } from './components/InteractiveBuilder'
 import './App.css'
 
@@ -18,6 +20,7 @@ const EXAMPLES = [
   { label: 'OXA-48 in Tn1999', value: '()chromosome, { { {}blaOXA-48[type="gene"] }Tn1999[type="transposon"] }pOXA-48a' },
   { label: 'CTX-M on ISEcp1', value: '()chromosome, { { {}blaCTX-M-15[type="gene"] }ISEcp1[type="insertion_sequence"] }pCTX-M-3' },
   { label: 'Kp CAV1193', value: '()CAV1193, {}pCAV1193-166, {}pCAV1193-258, {}pCAV1193-78, { { {}blaKPC-3[type="gene"] }Tn4401[type="transposon"] }pKPC_CAV1193' },
+  { label: 'Fungal Starship (schematic)', value: '({ {}DUF3435_captain[type="gene", role="captain"], {}cargo_gene_cluster[type="gene_cluster", role="cargo"] }Starship[type="starship", representation="schematic"])chromosome[organism="Macrophomina phaseolina"]' },
 ]
 
 export default function App() {
@@ -27,21 +30,26 @@ export default function App() {
   const [showImport, setShowImport] = useState(false)
   const [builderSyncVersion, setBuilderSyncVersion] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [diagramView, setDiagramView] = useState<'circular' | 'containment'>('circular')
   const fromBuilder = useRef(false)
 
-  const parsed = parseWolvercote(text)
-  const svgOutput = parsed.ok ? renderSVG(parsed.value) : null
+  const parsed = parseCellGen(text)
+  const svgOutput = parsed.ok
+    ? diagramView === 'circular'
+      ? renderSVG(parsed.value)
+      : renderContainmentSVG(parsed.value)
+    : null
 
-  const handleBuilderUpdate = useCallback((wolvStr: string) => {
+  const handleBuilderUpdate = useCallback((cellGenString: string) => {
     fromBuilder.current = true
-    setText(wolvStr)
+    setText(cellGenString)
   }, [])
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     fromBuilder.current = false
     const val = e.target.value
     setText(val)
-    const result = parseWolvercote(val)
+    const result = parseCellGen(val)
     if (result.ok || val.trim() === '') setBuilderSyncVersion((v) => v + 1)
   }
 
@@ -65,12 +73,12 @@ export default function App() {
         return
       }
       const result = type === 'genbank' ? parseGenBank(content) : parseGFF(content)
-      if (!result.wolvercote) {
+      if (!result.cellgen) {
         setUploadError('No recognisable replicons found in this file. Check the file contains LOCUS records or ##sequence-region directives.')
         return
       }
       fromBuilder.current = false
-      setText(result.wolvercote)
+      setText(result.cellgen)
       setBuilderSyncVersion((v) => v + 1)
       setShowImport(false)
     }
@@ -83,7 +91,7 @@ export default function App() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'wolvercote.svg'
+    a.download = 'cellgen.svg'
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -106,18 +114,18 @@ export default function App() {
       const pngUrl = canvas.toDataURL('image/png')
       const a = document.createElement('a')
       a.href = pngUrl
-      a.download = 'wolvercote.png'
+      a.download = 'cellgen.png'
       a.click()
     }
     img.src = url
   }
 
-  const downloadWolv = () => {
+  const downloadCellGen = () => {
     const blob = new Blob([text], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'wolvercote.txt'
+    a.download = 'cellgen.txt'
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -140,15 +148,15 @@ export default function App() {
               <rect x="17" y="10" width="5" height="3" rx="1" fill="#e05252" transform="rotate(-30 19.5 11.5)"/>
             </svg>
             <div>
-              <span className="app-header-name">Wolvercote</span>
-              <span className="app-header-sub">Bacterial Genome Organisation Visualiser</span>
+              <span className="app-header-name">CellGen</span>
+              <span className="app-header-sub">Cellular Genome Organisation Visualiser</span>
             </div>
           </div>
           <nav className="app-header-nav">
             <span className="app-header-version">v{__APP_VERSION__}</span>
             <ThemeToggle />
             <Link to="/about" className="app-header-link-btn">About</Link>
-            <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/cgps-group/cell-format" target="_blank" rel="noreferrer">GitHub</a>
           </nav>
         </div>
       </header>
@@ -181,7 +189,7 @@ export default function App() {
               label="Import GenBank or GFF3"
               accept=".gb,.gbk,.genbank,.gff,.gff3"
               multiple={false}
-              hint="Upload a GenBank or GFF3 file to auto-generate the Wolvercote format string"
+              hint="Upload a GenBank or GFF3 file to auto-generate the CellGen format string"
             />
             {uploadError && <div className="validation-error">{uploadError}</div>}
           </div>
@@ -190,21 +198,21 @@ export default function App() {
         {/* Format string — full width, above the two panels */}
         <div className="format-bar panel">
           <div className="format-bar-header">
-            <div className="format-preview-label">Wolvercote format</div>
+            <div className="format-preview-label">CellGen string</div>
             <div className="format-bar-actions">
-              <button className="gx-btn gx-btn-secondary" onClick={downloadWolv} disabled={!text}>
+              <button className="button button-secondary" onClick={downloadCellGen} disabled={!text}>
                 Download .txt
               </button>
-              <button className="gx-btn gx-btn-secondary" onClick={downloadSVG} disabled={!svgOutput}>
+              <button className="button button-secondary" onClick={downloadSVG} disabled={!svgOutput}>
                 Download SVG
               </button>
-              <button className="gx-btn gx-btn-primary" onClick={downloadPNG} disabled={!svgOutput}>
+              <button className="button button-primary" onClick={downloadPNG} disabled={!svgOutput}>
                 Download PNG
               </button>
             </div>
           </div>
           <textarea
-            className={`wolvercote-editor format-preview-textarea${!parsed.ok ? ' error' : ''}`}
+            className={`cellgen-editor format-preview-textarea${!parsed.ok ? ' error' : ''}`}
             value={text}
             onChange={handleTextareaChange}
             spellCheck={false}
@@ -214,8 +222,11 @@ export default function App() {
           <div className="format-bar-below">
             {!parsed.ok ? (
               <div className="validation-error">
-                {parsed.error.message}
-                {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
+                <div><strong>{parsed.error.code}</strong>: {parsed.error.message}</div>
+                <div>Line {parsed.error.line}, column {parsed.error.column}</div>
+                {parsed.error.context && (
+                  <pre>{parsed.error.context}{'\n'}{' '.repeat(Math.max(0, parsed.error.column - 1))}^</pre>
+                )}
               </div>
             ) : <div />}
             <button className="copy-btn" onClick={copyFormat} disabled={!text} title="Copy to clipboard">
@@ -237,12 +248,32 @@ export default function App() {
 
           {/* Right: SVG preview */}
           <div className="panel">
-            <div className="panel-title">Diagram preview</div>
+            <div className="diagram-panel-header">
+              <div className="panel-title">Diagram preview</div>
+              <div className="view-toggle" role="group" aria-label="Diagram representation">
+                <button
+                  type="button"
+                  className={`view-toggle-btn${diagramView === 'circular' ? ' active' : ''}`}
+                  aria-pressed={diagramView === 'circular'}
+                  onClick={() => setDiagramView('circular')}
+                >
+                  Circular
+                </button>
+                <button
+                  type="button"
+                  className={`view-toggle-btn${diagramView === 'containment' ? ' active' : ''}`}
+                  aria-pressed={diagramView === 'containment'}
+                  onClick={() => setDiagramView('containment')}
+                >
+                  Containment
+                </button>
+              </div>
+            </div>
             <div className="svg-viewer">
               {svgOutput ? (
                 <div dangerouslySetInnerHTML={{ __html: svgOutput }} />
               ) : (
-                <span style={{ color: 'var(--gx-text-muted)', fontSize: '0.9rem' }}>
+                <span style={{ color: 'var(--cellgen-text-muted)', fontSize: '0.9rem' }}>
                   Fix the format error to see the diagram
                 </span>
               )}
@@ -252,8 +283,8 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        Wolvercote &mdash; bacterial genome organisation format &bull;{' '}
-        <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">
+        CellGen · cellular genome organisation ·{' '}
+        <a href="https://github.com/cgps-group/cell-format/issues" target="_blank" rel="noreferrer">
           Report a bug
         </a>
       </footer>

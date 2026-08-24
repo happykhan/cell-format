@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ThemeToggle } from '@genomicx/ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 import '../App.css'
 
 declare const __APP_VERSION__: string
@@ -17,42 +17,44 @@ export default function About() {
             </svg>
             <div>
               <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <span className="app-header-name">Wolvercote</span>
+                <span className="app-header-name">CellGen</span>
               </Link>
-              <span className="app-header-sub">Bacterial Genome Organisation Visualiser</span>
+              <span className="app-header-sub">Cellular Genome Organisation Visualiser</span>
             </div>
           </div>
           <nav className="app-header-nav">
             <span className="app-header-version">v{__APP_VERSION__}</span>
             <ThemeToggle />
             <Link to="/" className="app-header-link-btn">← Back</Link>
-            <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/cgps-group/cell-format" target="_blank" rel="noreferrer">GitHub</a>
           </nav>
         </div>
       </header>
 
       <main className="app-main about-page">
         <div className="about-page-inner">
-          <h1 className="about-page-title">About Wolvercote</h1>
+          <h1 className="about-page-title">About CellGen</h1>
           <p className="about-page-lead">
-            Bacterial genomes are not just chromosomes. A typical clinical isolate carries
-            a chromosome plus a handful of plasmids, each of which may harbour transposons,
-            integrons, or resistance genes nested inside one another. Standard formats like
-            GenBank and GFF describe sequences well — but they say nothing about how those
-            replicons relate to each other inside a cell.
+            Genomes are not just flat collections of sequences. A bacterial isolate may carry
+            a chromosome and several plasmids, while a fungal chromosome may contain a large
+            mobile element such as a Starship. These structures can themselves contain genes,
+            gene clusters and other elements. GenBank and GFF describe sequence features, but
+            do not provide a compact notation for these containment relationships.
           </p>
           <p className="about-page-lead">
-            Wolvercote is a compact, human-readable notation that fills that gap. Inspired
+            CellGen is a compact, human-readable notation that fills that gap. Inspired
             by the Newick format for phylogenetic trees, it encodes the complete genomic
-            organisation of a bacterial cell — chromosomes, plasmids, and arbitrarily nested
-            mobile genetic elements — in a single line of text.
+            organisation of a cell, including chromosomes and arbitrarily nested biological
+            entities, in a single line of text.
           </p>
 
           <h2>The notation at a glance</h2>
           <p>
-            Parentheses <code>()</code> mark a chromosome; curly braces <code>{'{}'}</code> mark a plasmid or
-            MGE. Nesting them shows what lives inside what. A comma separates replicons
-            in the same cell; a semicolon separates different cells.
+            Parentheses <code>()</code> mean chromosome, and only chromosome. Curly braces
+            <code>{'{}'}</code> mean any other biological entity, including a plasmid, mobile
+            element, gene or gene cluster. A <code>type</code> attribute records the entity class
+            when the label alone is not sufficient. Nesting shows what is contained within what.
+            A comma separates elements in the same cell; a semicolon separates different cells.
           </p>
           <table className="about-table">
             <tbody>
@@ -70,7 +72,11 @@ export default function About() {
               </tr>
               <tr>
                 <td><code>{'{ { {}blaKPC-3 }Tn4401 }pKpQIL'}</code></td>
-                <td>KPC gene inside a transposon inside a plasmid — three levels deep</td>
+                <td>KPC gene inside a transposon inside a plasmid, three levels deep</td>
+              </tr>
+              <tr>
+                <td><code>{'({ {}DUF3435_captain[type="gene"], {}cargo_gene_cluster[type="gene_cluster"] }Starship[type="starship"])chromosome'}</code></td>
+                <td>Schematic fungal chromosome containing a Starship, its captain gene and cargo</td>
               </tr>
               <tr>
                 <td><code>A ; B</code></td>
@@ -88,21 +94,30 @@ export default function About() {
             Mobile genetic elements are the main vehicle for spread of antimicrobial
             resistance. Understanding <em>where</em> a resistance gene sits — on a conjugative
             plasmid, inside a transposon, or integrated into the chromosome — is just as
-            important as knowing the gene is there. Wolvercote makes that structure explicit
+            important as knowing the gene is there. CellGen makes that structure explicit
             and comparable across isolates without requiring large intermediate files or
             bespoke graph databases.
           </p>
           <p>
-            The recursive grammar allows structures of any depth. A single Wolvercote string
+            The recursive grammar allows structures of any depth. A single CellGen string
             can capture, for example, a <em>Klebsiella pneumoniae</em> chromosome carrying the
             <em>blaKPC-3</em> gene nested inside transposon Tn4401 inside the IncFII/IncR
-            plasmid pKpQIL — exactly the arrangement seen in KPC-producing outbreak strains.
+            plasmid pKpQIL, exactly the arrangement seen in KPC-producing outbreak strains.
+          </p>
+          <p>
+            The fungal Starship example is deliberately schematic. It represents a Starship
+            integrated in a chromosome, with a DUF3435 captain gene and a cargo gene cluster,
+            following the architecture described by{' '}
+            <a href="https://doi.org/10.1093/molbev/msac109" target="_blank" rel="noreferrer">
+              Gluck-Thaler and colleagues
+            </a>
+            . It does not claim sequence-resolved boundaries for a particular isolate.
           </p>
 
           <h2>This tool</h2>
           <p>
-            This web application lets you build and visualise Wolvercote strings interactively.
-            Use the builder to add chromosomes, plasmids, and nested MGEs by clicking, or type
+            This web application lets you build and visualise CellGen strings interactively.
+            Use the builder to add chromosomes and nested entities by clicking, or type
             the format string directly. You can also import a GenBank or GFF3 file to auto-generate
             a starting string from an existing assembly. The diagram preview updates live.
           </p>
@@ -128,16 +143,16 @@ export default function About() {
 
           <h2>Links</h2>
           <div className="about-links">
-            <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub repository</a>
-            <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">Report a bug</a>
+            <a href="https://github.com/cgps-group/cell-format" target="_blank" rel="noreferrer">GitHub repository</a>
+            <a href="https://github.com/cgps-group/cell-format/issues" target="_blank" rel="noreferrer">Report a bug</a>
             <a href="https://www.pathogensurveillance.net" target="_blank" rel="noreferrer">CGPS website</a>
           </div>
         </div>
       </main>
 
       <footer className="app-footer">
-        Wolvercote &mdash; bacterial genome organisation format &bull;{' '}
-        <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">
+        CellGen &mdash; cellular genome organisation &bull;{' '}
+        <a href="https://github.com/cgps-group/cell-format/issues" target="_blank" rel="noreferrer">
           Report a bug
         </a>
       </footer>

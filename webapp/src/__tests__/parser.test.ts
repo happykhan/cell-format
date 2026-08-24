@@ -1,16 +1,16 @@
 /**
- * Unit tests for the Wolvercote parser.
+ * Unit tests for the CellGen parser.
  * Valid cases are driven from the shared test_suite.json.
  */
 import { describe, it, expect } from 'vitest'
-import { parseWolvercote, validateWolvercote } from '../wolvercote/parser'
-import { to_wolvercote } from '../wolvercote/serialise'
+import { parseCellGen, validateCellGen } from '../cellgen/parser'
+import { toCellGen } from '../cellgen/serialise'
 import testSuite from '../../../tests/test_suite.json'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 function parse(input: string) {
-  const result = parseWolvercote(input)
+  const result = parseCellGen(input)
   if (!result.ok) throw new Error(result.error.message)
   return result.value
 }
@@ -58,15 +58,18 @@ describe('parser — invalid cases from test_suite.json', () => {
 
   for (const tc of shouldFail) {
     it(`${tc.id}: ${tc.description}`, () => {
-      const result = parseWolvercote(tc.input)
+      const result = parseCellGen(tc.input)
       expect(result.ok).toBe(false)
+      if (!result.ok && 'expected_code' in tc) {
+        expect(result.error.code).toBe(tc.expected_code)
+      }
     })
   }
 
   for (const tc of mayFail) {
     it(`${tc.id}: must not crash (may accept trailing semicolons)`, () => {
       // Parser may accept or reject — but must not throw
-      expect(() => parseWolvercote(tc.input)).not.toThrow()
+      expect(() => parseCellGen(tc.input)).not.toThrow()
     })
   }
 })
@@ -75,7 +78,7 @@ describe('parser — invalid cases from test_suite.json', () => {
 
 describe('parser — error position', () => {
   it('reports a non-zero position for mid-string errors', () => {
-    const result = parseWolvercote('()chr1, (unclosed')
+    const result = parseCellGen('()chr1, (unclosed')
     expect(result.ok).toBe(false)
     if (!result.ok) {
       expect(result.error.position).toBeGreaterThan(0)
@@ -83,7 +86,7 @@ describe('parser — error position', () => {
   })
 
   it('reports position 0 for empty input', () => {
-    const result = parseWolvercote('')
+    const result = parseCellGen('')
     expect(result.ok).toBe(false)
   })
 })
@@ -102,7 +105,7 @@ describe('parser — round-trip', () => {
   for (const input of cases) {
     it(`round-trips: ${input}`, () => {
       const cs = parse(input)
-      const serialised = to_wolvercote(cs)
+      const serialised = toCellGen(cs)
       const cs2 = parse(serialised)
       // Structure must be preserved
       expect(cs2.cells.length).toBe(cs.cells.length)
@@ -111,12 +114,12 @@ describe('parser — round-trip', () => {
   }
 })
 
-describe('validateWolvercote', () => {
+describe('validateCellGen', () => {
   it('returns no errors for valid input', () => {
-    expect(validateWolvercote('()chr1,{}pBAD')).toHaveLength(0)
+    expect(validateCellGen('()chr1,{}pBAD')).toHaveLength(0)
   })
 
   it('returns an error message for invalid input', () => {
-    expect(validateWolvercote('(unclosed')).not.toHaveLength(0)
+    expect(validateCellGen('(unclosed')).not.toHaveLength(0)
   })
 })

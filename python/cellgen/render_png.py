@@ -1,14 +1,14 @@
 """
 Publication-quality PNG renderer using matplotlib.
-Matches the Wolvercote spec sample image style.
-Features: legend, nested containment visualisation, 2-column MGE grid.
+Matches the CellGen spec sample image style.
+Features: legend, nested containment visualisation, 2-column ENTITY grid.
 """
 
 from __future__ import annotations
 import math
 import io
 from pathlib import Path
-from .types import Cell, CellSet, ChromosomeNode, MGENode
+from .types import Cell, CellSet, ChromosomeNode, EntityNode
 
 try:
     import matplotlib
@@ -21,8 +21,8 @@ except ImportError:
 
 CHR_COLOUR = "#3a6fba"
 CHR_FILL   = "#dde8f8"
-MGE_COLOUR = "#3a9943"
-MGE_FILL   = "#e6f5e6"
+ENTITY_COLOUR = "#3a9943"
+ENTITY_FILL   = "#e6f5e6"
 
 ELEMENT_COLOURS = {
     "transposon": "#e05252",
@@ -47,9 +47,9 @@ def _elem_colour(label: str, idx: int) -> str:
     return FALLBACK_COLOURS[idx % len(FALLBACK_COLOURS)]
 
 
-def _draw_nested(ax, elements: list[MGENode], cx: float, cy: float, r: float,
+def _draw_nested(ax, elements: list[EntityNode], cx: float, cy: float, r: float,
                  depth: int = 0) -> None:
-    """Draw nested MGE elements on the border of a circle.
+    """Draw nested ENTITY elements on the border of a circle.
 
     depth > 0 means these are children of a border element (shown as small
     stripes inside their parent rectangle rather than additional border marks).
@@ -113,21 +113,21 @@ def _draw_chromosome(ax, ch: ChromosomeNode, cx: float, cy: float, r: float) -> 
     _draw_nested(ax, ch.children, cx, cy, r)
 
 
-def _draw_mge(ax, mge: MGENode, cx: float, cy: float, r: float) -> None:
-    circle = plt.Circle((cx, cy), r, facecolor=MGE_FILL, edgecolor=MGE_COLOUR,
+def _draw_entity(ax, entity: EntityNode, cx: float, cy: float, r: float) -> None:
+    circle = plt.Circle((cx, cy), r, facecolor=ENTITY_FILL, edgecolor=ENTITY_COLOUR,
                          linewidth=3.5, zorder=2)
     ax.add_patch(circle)
-    if mge.label:
-        ax.text(cx, cy + r + 0.10, mge.label, ha="center", va="bottom",
+    if entity.label:
+        ax.text(cx, cy + r + 0.10, entity.label, ha="center", va="bottom",
                 fontsize=8.5, color="#333", fontfamily="sans-serif", zorder=3)
-    _draw_nested(ax, mge.children, cx, cy, r)
+    _draw_nested(ax, entity.children, cx, cy, r)
 
 
 def _draw_legend(ax, x: float, y: float) -> None:
     """Draw a small legend at (x, y) in data units."""
     items = [
         (CHR_COLOUR, CHR_FILL, "circle", "Chromosome"),
-        (MGE_COLOUR, MGE_FILL, "circle", "Plasmid / replicon"),
+        (ENTITY_COLOUR, ENTITY_FILL, "circle", "Plasmid / replicon"),
         ("#e05252", "#e05252", "rect",   "Transposon"),
         ("#9b59b6", "#9b59b6", "rect",   "Integron"),
         ("#f39c12", "#f39c12", "rect",   "IS element / phage"),
@@ -151,22 +151,22 @@ def _draw_legend(ax, x: float, y: float) -> None:
                 color="#444", va="center", zorder=9)
 
 
-def _cell_dimensions(chrs: list, mges: list,
-                      CHR_R: float, MGE_R: float, PAD: float) -> tuple[float, float]:
-    n_mge = len(mges)
-    mge_cols = 2 if n_mge > 2 else 1
-    mge_rows = math.ceil(n_mge / mge_cols) if n_mge else 0
+def _cell_dimensions(chrs: list, entities: list,
+                      CHR_R: float, ENTITY_R: float, PAD: float) -> tuple[float, float]:
+    n_entity = len(entities)
+    entity_cols = 2 if n_entity > 2 else 1
+    entity_rows = math.ceil(n_entity / entity_cols) if n_entity else 0
 
-    col_w = MGE_R * 2 + PAD + 0.15
-    col_h = MGE_R * 2 + PAD + 0.55
+    col_w = ENTITY_R * 2 + PAD + 0.15
+    col_h = ENTITY_R * 2 + PAD + 0.55
 
     chr_w = (CHR_R * 2 + PAD * 2) if chrs else 0
-    mge_w = mge_cols * col_w + PAD if n_mge else 0
-    width = chr_w + mge_w + PAD
+    entity_w = entity_cols * col_w + PAD if n_entity else 0
+    width = chr_w + entity_w + PAD
 
     chr_h = max(len(chrs), 1) * (CHR_R * 2 + PAD)
-    mge_h = mge_rows * col_h + PAD
-    height = max(chr_h, mge_h, CHR_R * 2 + PAD * 2)
+    entity_h = entity_rows * col_h + PAD
+    height = max(chr_h, entity_h, CHR_R * 2 + PAD * 2)
     return width, height
 
 
@@ -197,7 +197,7 @@ def render_png(
         raise ImportError("matplotlib is required for PNG rendering: pip install matplotlib")
 
     CHR_R = 0.80
-    MGE_R = 0.37
+    ENTITY_R = 0.37
     PAD   = 0.22
     CELL_SEP = 0.45
     LEGEND_W = 1.1  # width reserved for legend
@@ -208,9 +208,9 @@ def render_png(
     cell_data = []
     for cell in cells:
         chrs = [r for r in cell.replicons if isinstance(r, ChromosomeNode)]
-        mges = [r for r in cell.replicons if isinstance(r, MGENode)]
-        w, h = _cell_dimensions(chrs, mges, CHR_R, MGE_R, PAD)
-        cell_data.append((chrs, mges, w, h))
+        entities = [r for r in cell.replicons if isinstance(r, EntityNode)]
+        w, h = _cell_dimensions(chrs, entities, CHR_R, ENTITY_R, PAD)
+        cell_data.append((chrs, entities, w, h))
 
     total_w = sum(w for _, _, w, _ in cell_data) + (n_cells - 1) * CELL_SEP + PAD * 2
     if legend:
@@ -230,11 +230,11 @@ def render_png(
     x = PAD
     mid_y = total_h / 2
 
-    for ci, (chrs, mges, cw, ch) in enumerate(cell_data):
-        n_mge = len(mges)
-        mge_cols = 2 if n_mge > 2 else 1
-        col_w = MGE_R * 2 + PAD + 0.15
-        col_h = MGE_R * 2 + PAD + 0.55
+    for ci, (chrs, entities, cw, ch) in enumerate(cell_data):
+        n_entity = len(entities)
+        entity_cols = 2 if n_entity > 2 else 1
+        col_w = ENTITY_R * 2 + PAD + 0.15
+        col_h = ENTITY_R * 2 + PAD + 0.55
 
         if chrs:
             total_chr_h = len(chrs) * (CHR_R * 2 + PAD) - PAD
@@ -245,18 +245,18 @@ def render_png(
                 _draw_chromosome(ax, chromo, cx, cy, CHR_R)
             x += CHR_R * 2 + PAD * 2
 
-        if mges:
-            mge_rows = math.ceil(n_mge / mge_cols)
-            grid_h = mge_rows * col_h
+        if entities:
+            entity_rows = math.ceil(n_entity / entity_cols)
+            grid_h = entity_rows * col_h
             start_gy = mid_y - grid_h / 2
 
-            for i, mge in enumerate(mges):
-                row, col = divmod(i, mge_cols)
-                mx = x + col * col_w + MGE_R + PAD * 0.3
-                my = start_gy + row * col_h + MGE_R + 0.40
-                _draw_mge(ax, mge, mx, my, MGE_R)
+            for i, entity in enumerate(entities):
+                row, col = divmod(i, entity_cols)
+                mx = x + col * col_w + ENTITY_R + PAD * 0.3
+                my = start_gy + row * col_h + ENTITY_R + 0.40
+                _draw_entity(ax, entity, mx, my, ENTITY_R)
 
-            x += mge_cols * col_w + PAD
+            x += entity_cols * col_w + PAD
 
         x += PAD * 0.5
 
