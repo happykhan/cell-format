@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "description": "Formal test suite for the Wolvercote format. Any conforming parser must pass all cases.",
+  "description": "Formal test suite for the CellGen format. Any conforming parser must pass all cases.",
   "valid": [
     {
       "id": "empty_chromosome",

@@ -1,17 +1,17 @@
 /**
- * Unit tests for the Wolvercote serialiser.
+ * Unit tests for the CellGen serialiser.
  */
 import { describe, it, expect } from 'vitest'
-import { parseWolvercote } from '../wolvercote/parser'
-import { to_wolvercote } from '../wolvercote/serialise'
+import { parseCellGen } from '../cellgen/parser'
+import { toCellGen } from '../cellgen/serialise'
 
 function roundTrip(input: string) {
-  const result = parseWolvercote(input)
+  const result = parseCellGen(input)
   if (!result.ok) throw new Error(result.error.message)
-  return to_wolvercote(result.value)
+  return toCellGen(result.value)
 }
 
-describe('to_wolvercote', () => {
+describe('toCellGen', () => {
   it('serialises a lone chromosome', () => {
     expect(roundTrip('()chr1')).toContain('()chr1')
   })

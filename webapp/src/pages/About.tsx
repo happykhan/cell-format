@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ThemeToggle } from '@genomicx/ui'
+import { ThemeToggle } from '../components/ThemeToggle'
 import '../App.css'
 
 declare const __APP_VERSION__: string
@@ -17,23 +17,23 @@ export default function About() {
             </svg>
             <div>
               <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-                <span className="app-header-name">Wolvercote</span>
+                <span className="app-header-name">CellGen</span>
               </Link>
-              <span className="app-header-sub">Bacterial Genome Organisation Visualiser</span>
+              <span className="app-header-sub">Cellular Genome Organisation Visualiser</span>
             </div>
           </div>
           <nav className="app-header-nav">
             <span className="app-header-version">v{__APP_VERSION__}</span>
             <ThemeToggle />
             <Link to="/" className="app-header-link-btn">← Back</Link>
-            <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub</a>
+            <a href="https://github.com/cgps-group/cell-format" target="_blank" rel="noreferrer">GitHub</a>
           </nav>
         </div>
       </header>
 
       <main className="app-main about-page">
         <div className="about-page-inner">
-          <h1 className="about-page-title">About Wolvercote</h1>
+          <h1 className="about-page-title">About CellGen</h1>
           <p className="about-page-lead">
             Bacterial genomes are not just chromosomes. A typical clinical isolate carries
             a chromosome plus a handful of plasmids, each of which may harbour transposons,
@@ -42,7 +42,7 @@ export default function About() {
             replicons relate to each other inside a cell.
           </p>
           <p className="about-page-lead">
-            Wolvercote is a compact, human-readable notation that fills that gap. Inspired
+            CellGen is a compact, human-readable notation that fills that gap. Inspired
             by the Newick format for phylogenetic trees, it encodes the complete genomic
             organisation of a bacterial cell — chromosomes, plasmids, and arbitrarily nested
             mobile genetic elements — in a single line of text.
@@ -88,12 +88,12 @@ export default function About() {
             Mobile genetic elements are the main vehicle for spread of antimicrobial
             resistance. Understanding <em>where</em> a resistance gene sits — on a conjugative
             plasmid, inside a transposon, or integrated into the chromosome — is just as
-            important as knowing the gene is there. Wolvercote makes that structure explicit
+            important as knowing the gene is there. CellGen makes that structure explicit
             and comparable across isolates without requiring large intermediate files or
             bespoke graph databases.
           </p>
           <p>
-            The recursive grammar allows structures of any depth. A single Wolvercote string
+            The recursive grammar allows structures of any depth. A single CellGen string
             can capture, for example, a <em>Klebsiella pneumoniae</em> chromosome carrying the
             <em>blaKPC-3</em> gene nested inside transposon Tn4401 inside the IncFII/IncR
             plasmid pKpQIL — exactly the arrangement seen in KPC-producing outbreak strains.
@@ -101,7 +101,7 @@ export default function About() {
 
           <h2>This tool</h2>
           <p>
-            This web application lets you build and visualise Wolvercote strings interactively.
+            This web application lets you build and visualise CellGen strings interactively.
             Use the builder to add chromosomes, plasmids, and nested MGEs by clicking, or type
             the format string directly. You can also import a GenBank or GFF3 file to auto-generate
             a starting string from an existing assembly. The diagram preview updates live.
@@ -128,16 +128,16 @@ export default function About() {
 
           <h2>Links</h2>
           <div className="about-links">
-            <a href="https://github.com/happykhan/cell-format" target="_blank" rel="noreferrer">GitHub repository</a>
-            <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">Report a bug</a>
+            <a href="https://github.com/cgps-group/cell-format" target="_blank" rel="noreferrer">GitHub repository</a>
+            <a href="https://github.com/cgps-group/cell-format/issues" target="_blank" rel="noreferrer">Report a bug</a>
             <a href="https://www.pathogensurveillance.net" target="_blank" rel="noreferrer">CGPS website</a>
           </div>
         </div>
       </main>
 
       <footer className="app-footer">
-        Wolvercote &mdash; bacterial genome organisation format &bull;{' '}
-        <a href="https://github.com/happykhan/cell-format/issues" target="_blank" rel="noreferrer">
+        CellGen &mdash; cellular genome organisation &bull;{' '}
+        <a href="https://github.com/cgps-group/cell-format/issues" target="_blank" rel="noreferrer">
           Report a bug
         </a>
       </footer>

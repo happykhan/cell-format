@@ -1,5 +1,5 @@
 """
-Wolvercote format parser.
+CellGen format parser.
 
 Grammar:
   CellSet     → Cell (';' Cell)*
@@ -174,7 +174,7 @@ class _Parser:
 
 
 def parse(text: str) -> CellSet:
-    """Parse a Wolvercote format string into a CellSet.
+    """Parse a CellGen format string into a CellSet.
 
     Raises ParseError with a descriptive message if the string is invalid.
     """
@@ -194,5 +194,5 @@ def validate(text: str) -> list[str]:
 
 
 def is_valid(text: str) -> bool:
-    """Return True if the string is a valid Wolvercote format."""
+    """Return True if the string is a valid CellGen format."""
     return len(validate(text)) == 0

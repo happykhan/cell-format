@@ -1,6 +1,6 @@
 """
 Publication-quality PNG renderer using matplotlib.
-Matches the Wolvercote spec sample image style.
+Matches the CellGen spec sample image style.
 Features: legend, nested containment visualisation, 2-column MGE grid.
 """
 

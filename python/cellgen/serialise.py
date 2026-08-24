@@ -1,13 +1,13 @@
 """
-Serialise a CellSet back to a Wolvercote format string.
+Serialise a CellSet back to a CellGen format string.
 """
 
 from __future__ import annotations
 from .types import Cell, CellSet, ChromosomeNode, MGENode, Replicon
 
 
-def to_wolvercote(cell_set: CellSet) -> str:
-    """Convert a CellSet back to a Wolvercote format string."""
+def to_cellgen(cell_set: CellSet) -> str:
+    """Convert a CellSet back to a CellGen format string."""
     return " ; ".join(_cell_str(c) for c in cell_set.cells)
 
 

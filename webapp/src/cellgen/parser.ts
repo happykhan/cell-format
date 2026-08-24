@@ -1,5 +1,5 @@
 /**
- * Wolvercote format parser.
+ * CellGen format parser.
  *
  * Grammar:
  *   CellSet     → Cell (';' Cell)*
@@ -186,7 +186,7 @@ interface ParseError {
   found: string
 }
 
-export function parseWolvercote(input: string): ParseResult {
+export function parseCellGen(input: string): ParseResult {
   const trimmed = input.trim()
   if (!trimmed) {
     return {
@@ -213,8 +213,8 @@ export function parseWolvercote(input: string): ParseResult {
   }
 }
 
-export function validateWolvercote(input: string): string[] {
-  const result = parseWolvercote(input)
+export function validateCellGen(input: string): string[] {
+  const result = parseCellGen(input)
   if (result.ok) return []
   return [`Position ${result.error.position}: ${result.error.message}`]
 }

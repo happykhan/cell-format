@@ -2,11 +2,11 @@
  * Unit tests for the SVG renderer.
  */
 import { describe, it, expect } from 'vitest'
-import { parseWolvercote } from '../wolvercote/parser'
-import { renderSVG } from '../wolvercote/renderer'
+import { parseCellGen } from '../cellgen/parser'
+import { renderSVG } from '../cellgen/renderer'
 
 function parse(input: string) {
-  const result = parseWolvercote(input)
+  const result = parseCellGen(input)
   if (!result.ok) throw new Error(result.error.message)
   return result.value
 }

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react'
-import type { CellSet, ChromosomeNode, MGENode } from '../wolvercote/types'
+import type { CellSet, ChromosomeNode, MGENode } from '../cellgen/types'
 
 type ElementType = 'chromosome' | 'plasmid' | 'transposon' | 'integron' | 'insertion_sequence' | 'phage' | 'gene' | 'element'
 
@@ -82,7 +82,7 @@ function mgeItemStr(m: MGEItem, nested = false): string {
   return `{${inner}}${m.label}${attrs}`
 }
 
-function stateToWolvercote(state: BuilderState): string {
+function stateToCellGen(state: BuilderState): string {
   return state.cells
     .map((cell) => {
       const parts: string[] = []
@@ -148,7 +148,7 @@ interface ModalState {
 }
 
 interface Props {
-  onUpdate: (wolvercote: string) => void
+  onUpdate: (cellGenString: string) => void
   syncFrom?: CellSet | null
   syncVersion?: number
 }
@@ -170,7 +170,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
 
   const update = (next: BuilderState) => {
     setState(next)
-    onUpdate(stateToWolvercote(next))
+    onUpdate(stateToCellGen(next))
   }
 
   const openModal = (cellIdx: number, target: ModalTarget) => {
@@ -401,7 +401,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
       ))}
 
       <button
-        className="gx-btn gx-btn-secondary"
+        className="button button-secondary"
         onClick={() => update({ cells: [...state.cells, { chromosomes: [], mges: [] }] })}
         style={{ marginTop: '0.75rem' }}
       >
@@ -450,7 +450,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
               <>
                 <label className="builder-modal-label">
                   Colour{' '}
-                  <span style={{ color: 'var(--gx-text-muted)', fontWeight: 400 }}>
+                  <span style={{ color: 'var(--cellgen-text-muted)', fontWeight: 400 }}>
                     (default: {DEFAULT_COLOURS[newType] || '#888'})
                   </span>
                 </label>
@@ -459,7 +459,7 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
                     type="color"
                     value={newColour || DEFAULT_COLOURS[newType] || '#888888'}
                     onChange={(e) => setNewColour(e.target.value)}
-                    style={{ width: 36, height: 28, border: '1px solid var(--gx-border)', borderRadius: 4, cursor: 'pointer', padding: 2 }}
+                    style={{ width: 36, height: 28, border: '1px solid var(--cellgen-border)', borderRadius: 4, cursor: 'pointer', padding: 2 }}
                   />
                   <input
                     className="builder-modal-input"
@@ -484,8 +484,8 @@ export function InteractiveBuilder({ onUpdate, syncFrom, syncVersion }: Props) {
             )}
 
             <div className="builder-modal-actions">
-              <button className="gx-btn gx-btn-secondary" onClick={() => setModal(null)}>Cancel</button>
-              <button className="gx-btn gx-btn-primary" onClick={confirmAdd}>
+              <button className="button button-secondary" onClick={() => setModal(null)}>Cancel</button>
+              <button className="button button-primary" onClick={confirmAdd}>
                 {modal.isEdit ? 'Save' : 'Add'}
               </button>
             </div>

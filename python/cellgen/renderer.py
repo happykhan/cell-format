@@ -1,7 +1,7 @@
 """
-SVG renderer for Wolvercote CellSet objects.
+SVG renderer for CellGen CellSet objects.
 
-Produces circular diagrams matching the Wolvercote spec sample images:
+Produces circular diagrams matching the CellGen spec sample images:
   - Chromosomes: large blue circles
   - Plasmids / other MGEs: smaller green circles, positioned top-right of chromosome
   - Nested MGEs: coloured rectangles on the parent circle border

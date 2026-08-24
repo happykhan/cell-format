@@ -1,6 +1,6 @@
-# Real-World Wolvercote Examples
+# Real-World CellGen Examples
 
-These examples use publicly available complete genome assemblies from NCBI RefSeq to demonstrate the Wolvercote format on real bacterial genomes.
+These examples use publicly available complete genome assemblies from NCBI RefSeq to demonstrate the CellGen format on real bacterial genomes.
 
 ---
 
@@ -18,7 +18,7 @@ Simplified:
 ()chromosome
 ```
 
-This is the minimal Wolvercote representation. MG1655 is a lab strain cured of most mobile elements; it serves as a baseline reference.
+This is the minimal CellGen representation. MG1655 is a lab strain cured of most mobile elements; it serves as a baseline reference.
 
 ---
 
@@ -48,7 +48,7 @@ This demonstrates a clinically important multi-replicon genome typical of hospit
 ( {}Tn1999 )chromosome, { {}Tn1999 }pOXA-48
 ```
 
-The Tn1999 transposon appears in the plasmid (primary location) and may also be integrated in the chromosome (secondary event). This shared-element notation is a key feature of the Wolvercote format.
+The Tn1999 transposon appears in the plasmid (primary location) and may also be integrated in the chromosome (secondary event). This shared-element notation is a key feature of the CellGen format.
 
 ---
 
@@ -96,12 +96,12 @@ Attributes capture the output of plasmid typing tools (MOB-suite, PlasmidFinder)
 Use the Python package to convert a MOB-suite output directory:
 
 ```bash
-pip install wolvercote[genbank]
-wolvercote convert --mobsuite mob_recon_output/ --svg diagram.svg
+pip install cellgen[genbank]
+cellgen convert --mobsuite mob_recon_output/ --svg diagram.svg
 ```
 
 Or from a Bakta-annotated GenBank:
 
 ```bash
-wolvercote convert assembly.gbk --svg diagram.svg
+cellgen convert assembly.gbk --svg diagram.svg
 ```

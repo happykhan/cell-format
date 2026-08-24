@@ -1,11 +1,11 @@
 """
-GenBank and GFF3 → Wolvercote converter.
+GenBank and GFF3 → CellGen converter.
 
 Requires BioPython for GenBank parsing.
 GFF3 parsing is built-in (no extra dependency).
 
 Usage:
-    from wolvercote.genbank import from_genbank_file, from_gff_file, from_mobsuite
+    from cellgen.genbank import from_genbank_file, from_gff_file, from_mobsuite
 
     cell_set = from_genbank_file("assembly.gbk")
     cell_set = from_gff_file("annotation.gff")

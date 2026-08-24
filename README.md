@@ -1,10 +1,10 @@
-# Wolvercote format
+# CellGen
 
 A compact, human-readable notation for describing the organisation of bacterial genomes — inspired by the Newick format for phylogenetic trees.
 
 ## Overview
 
-Long-read sequencing now routinely produces complete bacterial genome assemblies, revealing the full complement of chromosomes, plasmids, and mobile genetic elements (MGEs) in a cell. The Wolvercote format provides a standard way to record and share this information in a single line of text.
+Long-read sequencing now routinely produces complete genome assemblies, revealing the full complement of chromosomes, plasmids, and mobile genetic elements (MGEs) in a cell. CellGen provides a standard way to record and share this information in a single line of text.
 
 **Key features**
 
@@ -16,7 +16,7 @@ Long-read sequencing now routinely produces complete bacterial genome assemblies
 
 ## Web app
 
-**[wolvercote.genomicx.org](https://wolvercote.genomicx.org)** — paste a Wolvercote string and get an SVG diagram. Or upload a GenBank/GFF3 file to generate the format automatically.
+**[cell-format.vercel.app](https://cell-format.vercel.app/)** — paste a CellGen string and get an SVG diagram. Or upload a GenBank/GFF3 file to generate a CellGen representation automatically.
 
 ## Format definition
 
@@ -78,13 +78,13 @@ KeyValue     → Key '=' '"' Value '"'
 
 ## Web app (`webapp/`)
 
-A fully client-side React application built with [@genomicx/ui](https://github.com/genomicx/genomicx-ui).
+A fully client-side React and TypeScript application.
 
 ### Features
 
-- **Live parser** — type or paste a Wolvercote string; errors shown inline with position
+- **Live parser** — type or paste a CellGen string; errors shown inline with position
 - **SVG renderer** — circular diagrams: blue for chromosomes, green for plasmids, coloured rectangles on borders for MGEs
-- **GenBank / GFF3 import** — upload an annotated assembly file to auto-generate the Wolvercote string
+- **GenBank / GFF3 import** — upload an annotated assembly file to auto-generate the CellGen string
 - **Download** — export the diagram as SVG or the format string as plain text
 - **No server required** — everything runs in the browser
 

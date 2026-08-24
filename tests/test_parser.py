@@ -1,10 +1,10 @@
-"""Run the formal test suite against the Python wolvercote parser."""
+"""Run the formal test suite against the Python cellgen parser."""
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "python"))
-from wolvercote import parse, is_valid, ParseError
+from cellgen import parse, is_valid, ParseError
 
 suite = json.loads((Path(__file__).parent / "test_suite.json").read_text())
 

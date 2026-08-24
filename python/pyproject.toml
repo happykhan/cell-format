@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.backends.legacy:build"
 
 [project]
-name = "wolvercote"
+name = "cellgen"
 version = "0.1.0"
-description = "Parser, validator, and SVG renderer for the Wolvercote bacterial genome organisation format"
+description = "Parser, validator, and SVG renderer for CellGen cellular genome organisation strings"
 readme = "../README.md"
 license = {text = "MIT"}
 authors = [
@@ -27,13 +27,13 @@ dependencies = []
 genbank = ["biopython>=1.80"]
 
 [project.scripts]
-wolvercote = "wolvercote.__main__:main"
+cellgen = "cellgen.__main__:main"
 
 [project.urls]
-Homepage = "https://github.com/happykhan/cell-format"
-Repository = "https://github.com/happykhan/cell-format"
-Issues = "https://github.com/happykhan/cell-format/issues"
+Homepage = "https://github.com/cgps-group/cell-format"
+Repository = "https://github.com/cgps-group/cell-format"
+Issues = "https://github.com/cgps-group/cell-format/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["wolvercote*"]
+include = ["cellgen*"]

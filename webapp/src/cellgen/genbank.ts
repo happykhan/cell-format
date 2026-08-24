@@ -1,6 +1,6 @@
 /**
  * GenBank / GFF3 parser that extracts genomic elements and generates
- * a Wolvercote format string.
+ * a CellGen format string.
  *
  * GenBank: parses LOCUS, DEFINITION, FEATURES sections.
  * GFF3: parses ##sequence-region and feature lines.
@@ -26,7 +26,7 @@ function classifyByLabel(label: string): 'chromosome' | 'plasmid' | 'mge' {
   return 'chromosome' // default: assume chromosome
 }
 
-function repliconToWolvercote(rep: RepliconInfo): string {
+function repliconToCellGen(rep: RepliconInfo): string {
   const mgeStr = rep.mges.map(m => `{}${m}`).join(', ')
   const inner = mgeStr ? ` ${mgeStr} ` : ''
   if (rep.type === 'chromosome') {
@@ -38,7 +38,7 @@ function repliconToWolvercote(rep: RepliconInfo): string {
 
 // ── GenBank parser ────────────────────────────────────────────────────────────
 
-export function parseGenBank(text: string): { wolvercote: string; replicons: RepliconInfo[] } {
+export function parseGenBank(text: string): { cellgen: string; replicons: RepliconInfo[] } {
   const replicons: RepliconInfo[] = []
   const lines = text.split('\n')
 
@@ -108,7 +108,7 @@ export function parseGenBank(text: string): { wolvercote: string; replicons: Rep
 
 // ── GFF3 parser ───────────────────────────────────────────────────────────────
 
-export function parseGFF(text: string): { wolvercote: string; replicons: RepliconInfo[] } {
+export function parseGFF(text: string): { cellgen: string; replicons: RepliconInfo[] } {
   const replicons: Map<string, RepliconInfo> = new Map()
   const lines = text.split('\n')
 
@@ -160,15 +160,15 @@ export function parseGFF(text: string): { wolvercote: string; replicons: Replico
   return buildResult([...replicons.values()])
 }
 
-function buildResult(replicons: RepliconInfo[]): { wolvercote: string; replicons: RepliconInfo[] } {
+function buildResult(replicons: RepliconInfo[]): { cellgen: string; replicons: RepliconInfo[] } {
   if (replicons.length === 0) {
-    return { wolvercote: '', replicons: [] }
+    return { cellgen: '', replicons: [] }
   }
 
   // Group into a single cell (all replicons together)
-  const parts = replicons.map(repliconToWolvercote)
+  const parts = replicons.map(repliconToCellGen)
   return {
-    wolvercote: parts.join(', '),
+    cellgen: parts.join(', '),
     replicons,
   }
 }

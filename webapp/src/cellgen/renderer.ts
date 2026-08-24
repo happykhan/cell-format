@@ -1,6 +1,6 @@
 /**
- * Wolvercote SVG renderer.
- * Produces circular diagrams matching the Wolvercote spec sample image style.
+ * CellGen SVG renderer.
+ * Produces circular diagrams matching the CellGen spec sample image style.
  */
 
 import type { Cell, CellSet, ChromosomeNode, MGENode } from './types'
@@ -303,13 +303,6 @@ function computeCellLayout(cell: Cell): CellLayout {
 
   // Chromosome ring radius (0 for a single chromosome placed at the cell centre)
   const chrRingR = nChr > 1 ? (CHR_R + PAD / 2) / Math.sin(Math.PI / nChr) : 0
-
-  // Farthest physical extent of chr circles + arc bands (from cell centre)
-  const chrBandExt = nChr > 0
-    ? chrs.reduce((mx, ch) =>
-        Math.max(mx, ch.children.length ? ARC_BAND_CHR + totalBandExtent(ch.children, ARC_BAND_CHR * ARC_TAPER) : 0), 0)
-    : 0
-  const chrPhysOuterR = nChr > 0 ? chrRingR + CHR_R + chrBandExt : 0
 
   // Farthest label reach from chr arcs (from cell centre)
   const chrLabelOuterR = nChr > 0

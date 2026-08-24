@@ -1,10 +1,10 @@
 /**
- * Serialise a CellSet back to a Wolvercote format string.
+ * Serialise a CellSet back to a CellGen format string.
  */
 
 import type { Cell, CellSet, MGENode, Replicon } from './types'
 
-export function to_wolvercote(cellSet: CellSet): string {
+export function toCellGen(cellSet: CellSet): string {
   return cellSet.cells.map(cellStr).join(' ; ')
 }
 
