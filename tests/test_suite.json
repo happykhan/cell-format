@@ -165,6 +165,24 @@
         "cells": 1,
         "cell_0_replicon_0_label": "E.coli-K12"
       }
+    },
+    {
+      "id": "quoted_label",
+      "input": "()\"chromosome one\"",
+      "description": "Labels containing spaces may be double-quoted",
+      "expected": {
+        "cells": 1,
+        "cell_0_replicon_0_label": "chromosome one"
+      }
+    },
+    {
+      "id": "escaped_attribute_value",
+      "input": "()chr[note=\"line 1\\n\\\"quoted\\\"\"]",
+      "description": "Quoted values support standard escapes",
+      "expected": {
+        "cells": 1,
+        "cell_0_replicon_0_attributes": {"note": "line 1\n\"quoted\""}
+      }
     }
   ],
   "invalid": [
@@ -212,7 +230,44 @@
     {
       "id": "attribute_missing_equals",
       "input": "()chr[key\"value\"]",
-      "description": "Attribute key and value must be separated by '='"
+      "description": "Attribute key and value must be separated by '='",
+      "expected_code": "MISSING_EQUALS"
+    },
+    {
+      "id": "missing_entity_separator",
+      "input": "({}a {}b)chr",
+      "description": "Contained siblings must be separated by a comma",
+      "expected_code": "MISSING_SEPARATOR"
+    },
+    {
+      "id": "nested_chromosome",
+      "input": "{()chr}entity",
+      "description": "Chromosomes cannot occur inside an entity",
+      "expected_code": "NESTED_CHROMOSOME"
+    },
+    {
+      "id": "duplicate_attribute",
+      "input": "()chr[type=\"a\",type=\"b\"]",
+      "description": "Attribute keys cannot be repeated",
+      "expected_code": "DUPLICATE_ATTRIBUTE"
+    },
+    {
+      "id": "empty_attributes",
+      "input": "()chr[]",
+      "description": "Attribute blocks cannot be empty",
+      "expected_code": "EMPTY_ATTRIBUTES"
+    },
+    {
+      "id": "invalid_escape",
+      "input": "()chr[note=\"bad\\q\"]",
+      "description": "Unsupported quoted-value escapes are rejected",
+      "expected_code": "INVALID_ESCAPE"
+    },
+    {
+      "id": "trailing_entity_separator",
+      "input": "({}a,)chr",
+      "description": "A comma cannot appear before a closing delimiter",
+      "expected_code": "TRAILING_SEPARATOR"
     }
   ]
 }

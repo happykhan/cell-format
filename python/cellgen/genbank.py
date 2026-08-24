@@ -43,30 +43,49 @@ def _classify_qualifier(qualifier_text: str) -> str:
 # ── GenBank ───────────────────────────────────────────────────────────────────
 
 def from_genbank_file(path: str | Path) -> CellSet:
-    """Parse a GenBank file (may contain multiple records) → CellSet."""
+    """Parse an assembly or standalone element GenBank file into one cell.
+
+    Multi-record files are treated as assemblies. A single record whose
+    full span is annotated as a mobile element is represented as a bare
+    entity, which covers TnCentral and Matryoshka-style element records.
+    """
     try:
         from Bio import SeqIO  # type: ignore[import-untyped]
     except ImportError as e:
         raise ImportError("BioPython is required for GenBank parsing: pip install biopython") from e
 
-    replicons: list[CellularElement] = []
-    for record in SeqIO.parse(str(path), "genbank"):
-        rep_type = _classify_gb_record(record)
-        mges = _extract_gb_mges(record)
-        label = record.name or record.id
-        size = len(record.seq) if record.seq else None
+    records = list(SeqIO.parse(str(path), "genbank"))
+    if not records:
+        raise ValueError(f"No GenBank records found in {path}")
 
+    replicons: list[CellularElement] = []
+    for record in records:
+        roots = _extract_gb_hierarchy(record)
+        full_span = _full_span_mobile_root(record, roots)
+        if len(records) == 1 and full_span is not None:
+            replicons.append(full_span)
+            continue
+
+        rep_type = _classify_gb_record(record)
+        label = record.id or record.name
+        size = len(record.seq) if record.seq else None
+        attrs: Attributes = {"type": rep_type, "accession": record.id}
+        topology = record.annotations.get("topology")
+        if topology:
+            attrs["topology"] = str(topology)
+        if size is not None:
+            attrs["length"] = str(size)
         if rep_type == "chromosome":
-            replicons.append(ChromosomeNode(label=label, children=mges, size_bp=size))
+            replicons.append(ChromosomeNode(label=label, children=roots, attributes=attrs, size_bp=size))
         else:
-            replicons.append(EntityNode(label=label, children=mges, size_bp=size))
+            replicons.append(EntityNode(label=label, children=roots, attributes=attrs, size_bp=size))
 
     return CellSet(cells=[Cell(replicons=replicons)])
 
 
 def _classify_gb_record(record) -> str:  # type: ignore[no-untyped-def]
     """Chromosome or plasmid based on DEFINITION / keywords."""
-    definition = record.description.lower()
+    definition = f"{record.description} {record.id} {record.name}".lower()
     if "plasmid" in definition:
         return "plasmid"
     if "chromosome" in definition:
@@ -79,25 +98,93 @@ def _classify_gb_record(record) -> str:  # type: ignore[no-untyped-def]
     return "chromosome"
 
 
-def _extract_gb_mges(record) -> list[EntityNode]:  # type: ignore[no-untyped-def]
-    seen: set[str] = set()
-    mges: list[EntityNode] = []
+def _feature_type(feat) -> str | None:  # type: ignore[no-untyped-def]
+    raw = feat.type.lower()
+    if raw in {"mobile_element", "transposon", "insertion_sequence", "integron"}:
+        qualifier = feat.qualifiers.get("mobile_element_type", [raw])[0].lower()
+        if "insertion sequence" in qualifier or raw == "insertion_sequence":
+            return "insertion_sequence"
+        if "integron" in qualifier or raw == "integron":
+            return "integron"
+        if "transposon" in qualifier or raw == "transposon":
+            return "transposon"
+        return "mobile_element"
+    if raw in {"cds", "gene"}:
+        return "gene"
+    if raw == "misc_feature":
+        note = " ".join(feat.qualifiers.get("note", [])).lower()
+        if "integron" in note:
+            return "integron"
+    return None
+
+
+def _feature_label(feat, entity_type: str) -> str:  # type: ignore[no-untyped-def]
+    keys = ("mobile_element_type", "gene", "label", "locus_tag", "product", "note")
+    for key in keys:
+        values = feat.qualifiers.get(key)
+        if values:
+            label = values[0].split(":", 1)[-1].strip()
+            if label:
+                return label
+    return entity_type
+
+
+def _extract_gb_hierarchy(record) -> list[EntityNode]:  # type: ignore[no-untyped-def]
+    entries: list[tuple[int, int, str, EntityNode]] = []
     for feat in record.features:
-        if feat.type.lower() not in _MGE_FEATURE_TYPES:
+        entity_type = _feature_type(feat)
+        if entity_type is None or feat.location is None:
             continue
-        # Get label from qualifiers
-        label = ""
-        for q in ("mobile_element_type", "note", "gene", "locus_tag"):
-            if q in feat.qualifiers:
-                label = _classify_qualifier(feat.qualifiers[q][0])
-                break
-        if not label:
-            label = feat.type
-        if label not in seen:
-            seen.add(label)
-            size = len(feat.location) if feat.location else None
-            mges.append(EntityNode(label=label, size_bp=size))
-    return mges
+        start = int(feat.location.start) + 1
+        end = int(feat.location.end)
+        strand_value = getattr(feat.location, "strand", None)
+        strand = "+" if strand_value == 1 else "-" if strand_value == -1 else "."
+        attrs: Attributes = {
+            "type": entity_type,
+            "start": str(start),
+            "end": str(end),
+            "strand": strand,
+        }
+        node = EntityNode(
+            label=_feature_label(feat, entity_type),
+            attributes=attrs,
+            size_bp=end - start + 1,
+        )
+        entries.append((start, end, entity_type, node))
+
+    # A gene can be a child but never a coordinate-derived parent. Each node is
+    # attached to its smallest strict enclosing non-gene feature.
+    roots: list[EntityNode] = []
+    for start, end, _, node in entries:
+        parents = [entry for entry in entries
+                   if entry[2] != "gene" and entry[0] <= start and end <= entry[1]
+                   and (entry[0], entry[1]) != (start, end)]
+        if parents:
+            parent = min(parents, key=lambda entry: (entry[1] - entry[0], entry[0]))[3]
+            parent.children.append(node)
+        else:
+            roots.append(node)
+
+    def sort_children(node: EntityNode) -> None:
+        node.children.sort(key=lambda child: int(child.attributes.get("start", "0")))
+        for child in node.children:
+            sort_children(child)
+
+    roots.sort(key=lambda node: int(node.attributes.get("start", "0")))
+    for root in roots:
+        sort_children(root)
+    return roots
+
+
+def _full_span_mobile_root(record, roots: list[EntityNode]) -> EntityNode | None:  # type: ignore[no-untyped-def]
+    length = len(record.seq)
+    for root in roots:
+        if (root.attributes.get("type") != "gene"
+                and root.attributes.get("start") == "1"
+                and root.attributes.get("end") == str(length)):
+            root.attributes.setdefault("accession", record.id)
+            return root
+    return None
 
 
 # ── GFF3 ──────────────────────────────────────────────────────────────────────

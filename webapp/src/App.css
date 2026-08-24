@@ -478,6 +478,14 @@
   font-family: var(--cellgen-font-mono);
 }
 
+.validation-error pre {
+  margin: 0.35rem 0 0;
+  overflow-x: auto;
+  color: inherit;
+  font: 0.78rem/1.35 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  white-space: pre;
+}
+
 /* ── SVG viewer ──────────────────────────────── */
 .svg-viewer {
   width: 100%;

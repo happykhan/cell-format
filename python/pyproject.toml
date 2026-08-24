@@ -1,12 +1,12 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "cellgen"
 version = "0.1.0"
 description = "Parser, validator, and SVG renderer for CellGen cellular genome organisation strings"
-readme = "../README.md"
+readme = "README.md"
 license = {text = "MIT"}
 authors = [
     {name = "Julio Diaz Caballero"},
@@ -25,6 +25,8 @@ dependencies = []
 
 [project.optional-dependencies]
 genbank = ["biopython>=1.80"]
+docs = ["mkdocs-material>=9.5"]
+test = ["pytest>=8.0", "biopython>=1.80"]
 
 [project.scripts]
 cellgen = "cellgen.__main__:main"

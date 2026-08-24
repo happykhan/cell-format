@@ -13,7 +13,7 @@ Quick start::
         f.write(svg)
 
     errors = validate("()unclosed")
-    print(errors)   # ["Position 10: Unclosed '(' — missing ')'"]
+    print(errors)   # positioned diagnostic with a source excerpt and caret
 
 GenBank / GFF3 import::
 

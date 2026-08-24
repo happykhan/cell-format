@@ -222,8 +222,11 @@ export default function App() {
           <div className="format-bar-below">
             {!parsed.ok ? (
               <div className="validation-error">
-                {parsed.error.message}
-                {parsed.error.position > 0 && ` (at position ${parsed.error.position})`}
+                <div><strong>{parsed.error.code}</strong>: {parsed.error.message}</div>
+                <div>Line {parsed.error.line}, column {parsed.error.column}</div>
+                {parsed.error.context && (
+                  <pre>{parsed.error.context}{'\n'}{' '.repeat(Math.max(0, parsed.error.column - 1))}^</pre>
+                )}
               </div>
             ) : <div />}
             <button className="copy-btn" onClick={copyFormat} disabled={!text} title="Copy to clipboard">

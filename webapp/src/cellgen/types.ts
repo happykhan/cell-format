@@ -27,9 +27,14 @@ export interface CellSet {
 }
 
 export interface ParseError {
+  code: string
   message: string
   position: number
+  line: number
+  column: number
   found: string
+  expected: string
+  context: string
 }
 
 export type ParseResult =

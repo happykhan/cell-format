@@ -60,6 +60,9 @@ describe('parser — invalid cases from test_suite.json', () => {
     it(`${tc.id}: ${tc.description}`, () => {
       const result = parseCellGen(tc.input)
       expect(result.ok).toBe(false)
+      if (!result.ok && 'expected_code' in tc) {
+        expect(result.error.code).toBe(tc.expected_code)
+      }
     })
   }
 
