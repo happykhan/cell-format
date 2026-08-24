@@ -4,6 +4,7 @@
 import { describe, it, expect } from 'vitest'
 import { parseCellGen } from '../cellgen/parser'
 import { renderSVG } from '../cellgen/renderer'
+import { renderContainmentSVG } from '../cellgen/containmentRenderer'
 
 function parse(input: string) {
   const result = parseCellGen(input)
@@ -98,5 +99,37 @@ describe('renderSVG', () => {
     const out = renderSVG(cs)
     expect(out).not.toContain('E&Coli')  // raw & must be escaped
     expect(out).toContain('&amp;')
+  })
+})
+
+describe('renderContainmentSVG', () => {
+  it('renders chromosomes as solid blue containers', () => {
+    const out = renderContainmentSVG(parse('()chr1'))
+    expect(out).toContain('chr1')
+    expect(out).toContain('stroke="#3975dc"')
+    expect(out).not.toContain('stroke="#3975dc" stroke-width="2" stroke-dasharray')
+  })
+
+  it('renders non-chromosomal entities as dashed orange containers', () => {
+    const out = renderContainmentSVG(parse('{}pKPC[type="plasmid"]'))
+    expect(out).toContain('pKPC')
+    expect(out).toContain('stroke="#e77914"')
+    expect(out).toContain('stroke-dasharray="7 5"')
+  })
+
+  it('shows nested containment and renders genes as labelled pills', () => {
+    const out = renderContainmentSVG(parse('({{}blaKPC-2[type="gene"]}Tn4401[type="transposon"])chromosome'))
+    expect(out).toContain('chromosome')
+    expect(out).toContain('Tn4401')
+    expect(out).toContain('blaKPC-2')
+    expect(out).toContain('fill="#d92d2d"')
+    expect(out).toContain('CellGen containment diagram')
+  })
+
+  it('labels multiple cells and separates them', () => {
+    const out = renderContainmentSVG(parse('()chrA ; ()chrB'))
+    expect(out).toContain('Cell 1')
+    expect(out).toContain('Cell 2')
+    expect(out).toContain('stroke-dasharray="6 5"')
   })
 })

@@ -4,6 +4,7 @@ import { FileUpload } from './components/FileUpload'
 import { ThemeToggle } from './components/ThemeToggle'
 import { parseCellGen } from './cellgen/parser'
 import { renderSVG } from './cellgen/renderer'
+import { renderContainmentSVG } from './cellgen/containmentRenderer'
 import { parseGenBank, parseGFF, detectFileType } from './cellgen/genbank'
 import { InteractiveBuilder } from './components/InteractiveBuilder'
 import './App.css'
@@ -29,10 +30,15 @@ export default function App() {
   const [showImport, setShowImport] = useState(false)
   const [builderSyncVersion, setBuilderSyncVersion] = useState(0)
   const [copied, setCopied] = useState(false)
+  const [diagramView, setDiagramView] = useState<'circular' | 'containment'>('circular')
   const fromBuilder = useRef(false)
 
   const parsed = parseCellGen(text)
-  const svgOutput = parsed.ok ? renderSVG(parsed.value) : null
+  const svgOutput = parsed.ok
+    ? diagramView === 'circular'
+      ? renderSVG(parsed.value)
+      : renderContainmentSVG(parsed.value)
+    : null
 
   const handleBuilderUpdate = useCallback((cellGenString: string) => {
     fromBuilder.current = true
@@ -239,7 +245,27 @@ export default function App() {
 
           {/* Right: SVG preview */}
           <div className="panel">
-            <div className="panel-title">Diagram preview</div>
+            <div className="diagram-panel-header">
+              <div className="panel-title">Diagram preview</div>
+              <div className="view-toggle" role="group" aria-label="Diagram representation">
+                <button
+                  type="button"
+                  className={`view-toggle-btn${diagramView === 'circular' ? ' active' : ''}`}
+                  aria-pressed={diagramView === 'circular'}
+                  onClick={() => setDiagramView('circular')}
+                >
+                  Circular
+                </button>
+                <button
+                  type="button"
+                  className={`view-toggle-btn${diagramView === 'containment' ? ' active' : ''}`}
+                  aria-pressed={diagramView === 'containment'}
+                  onClick={() => setDiagramView('containment')}
+                >
+                  Containment
+                </button>
+              </div>
+            </div>
             <div className="svg-viewer">
               {svgOutput ? (
                 <div dangerouslySetInnerHTML={{ __html: svgOutput }} />
@@ -254,7 +280,7 @@ export default function App() {
       </main>
 
       <footer className="app-footer">
-        CellGen &mdash; cellular genome organisation &bull;{' '}
+        CellGen · cellular genome organisation ·{' '}
         <a href="https://github.com/cgps-group/cell-format/issues" target="_blank" rel="noreferrer">
           Report a bug
         </a>
