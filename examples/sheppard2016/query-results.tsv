@@ -1,0 +1,7 @@
+isolate	plasmid	accession	published_group	Tn4401	outer_element	gene_to_plasmid	cellgen_display
+CAV1016	pKPC_UVA01	CP017937.1	pKPC_UVA01	represented	Tn2-like	blaKPC > Tn4401 > Tn2-like > pKPC_UVA01	{{{{}blaKPC}Tn4401}Tn2-like}pKPC_UVA01
+CAV1392	pKPC_CAV1392	CP011575.1	pKPC_UVA01	represented	Tn2-like	blaKPC > Tn4401 > Tn2-like > pKPC_CAV1392	{{{{}blaKPC}Tn4401}Tn2-like}pKPC_CAV1392
+CAV1344	pCAV1344-40	CP011620.1	pKPC_UVA01	published absence	not represented	not applicable	"{}pCAV1344-40[tn4401_status=""absent""]"
+CAV1344	pKPC_CAV1344	CP011622.1	singleton	represented	Tn1331	blaKPC > Tn4401 > Tn1331 > pKPC_CAV1344	{{{{}blaKPC}Tn4401}Tn1331}pKPC_CAV1344
+CAV1596	pKPC_CAV1596-78	CP011645.1	singleton	represented	Tn1331	blaKPC > Tn4401 > Tn1331 > pKPC_CAV1596-78	{{{{}blaKPC}Tn4401}Tn1331}pKPC_CAV1596-78
+CAV1596	pKPC_CAV1596-97	CP011646.1	singleton	represented	not represented	blaKPC > Tn4401 > pKPC_CAV1596-97	{{{}blaKPC}Tn4401}pKPC_CAV1596-97

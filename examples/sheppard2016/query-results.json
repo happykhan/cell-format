@@ -1,0 +1,99 @@
+{
+  "contexts": [
+    {
+      "isolate": "CAV1016",
+      "plasmid": "pKPC_UVA01",
+      "accession": "CP017937.1",
+      "published_group": "pKPC_UVA01",
+      "Tn4401": "represented",
+      "outer_element": "Tn2-like",
+      "gene_to_plasmid": "blaKPC > Tn4401 > Tn2-like > pKPC_UVA01",
+      "cellgen_display": "{{{{}blaKPC}Tn4401}Tn2-like}pKPC_UVA01"
+    },
+    {
+      "isolate": "CAV1392",
+      "plasmid": "pKPC_CAV1392",
+      "accession": "CP011575.1",
+      "published_group": "pKPC_UVA01",
+      "Tn4401": "represented",
+      "outer_element": "Tn2-like",
+      "gene_to_plasmid": "blaKPC > Tn4401 > Tn2-like > pKPC_CAV1392",
+      "cellgen_display": "{{{{}blaKPC}Tn4401}Tn2-like}pKPC_CAV1392"
+    },
+    {
+      "isolate": "CAV1344",
+      "plasmid": "pCAV1344-40",
+      "accession": "CP011620.1",
+      "published_group": "pKPC_UVA01",
+      "Tn4401": "published absence",
+      "outer_element": "not represented",
+      "gene_to_plasmid": "not applicable",
+      "cellgen_display": "{}pCAV1344-40[tn4401_status=\"absent\"]"
+    },
+    {
+      "isolate": "CAV1344",
+      "plasmid": "pKPC_CAV1344",
+      "accession": "CP011622.1",
+      "published_group": "singleton",
+      "Tn4401": "represented",
+      "outer_element": "Tn1331",
+      "gene_to_plasmid": "blaKPC > Tn4401 > Tn1331 > pKPC_CAV1344",
+      "cellgen_display": "{{{{}blaKPC}Tn4401}Tn1331}pKPC_CAV1344"
+    },
+    {
+      "isolate": "CAV1596",
+      "plasmid": "pKPC_CAV1596-78",
+      "accession": "CP011645.1",
+      "published_group": "singleton",
+      "Tn4401": "represented",
+      "outer_element": "Tn1331",
+      "gene_to_plasmid": "blaKPC > Tn4401 > Tn1331 > pKPC_CAV1596-78",
+      "cellgen_display": "{{{{}blaKPC}Tn4401}Tn1331}pKPC_CAV1596-78"
+    },
+    {
+      "isolate": "CAV1596",
+      "plasmid": "pKPC_CAV1596-97",
+      "accession": "CP011646.1",
+      "published_group": "singleton",
+      "Tn4401": "represented",
+      "outer_element": "not represented",
+      "gene_to_plasmid": "blaKPC > Tn4401 > pKPC_CAV1596-97",
+      "cellgen_display": "{{{}blaKPC}Tn4401}pKPC_CAV1596-97"
+    }
+  ],
+  "queries": [
+    {
+      "query": "plasmid_group equals pKPC_UVA01",
+      "matches": [
+        "pKPC_UVA01",
+        "pKPC_CAV1392",
+        "pCAV1344-40"
+      ]
+    },
+    {
+      "query": "Tn4401 descendant is represented",
+      "matches": [
+        "pKPC_UVA01",
+        "pKPC_CAV1392",
+        "pKPC_CAV1344",
+        "pKPC_CAV1596-78",
+        "pKPC_CAV1596-97"
+      ]
+    },
+    {
+      "query": "Tn4401 has an enclosing Tn2-like element or Tn1331",
+      "matches": [
+        "pKPC_UVA01",
+        "pKPC_CAV1392",
+        "pKPC_CAV1344",
+        "pKPC_CAV1596-78"
+      ]
+    },
+    {
+      "query": "published tn4401_status equals absent",
+      "matches": [
+        "pCAV1344-40"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "publication_doi": "10.1128/AAC.00464-16",
+  "bioproject": "PRJNA246471",
+  "retrieved": "2026-10-21",
+  "source_files": [
+    {
+      "isolate": "CAV1016",
+      "sha256": "7bb246a5cb6e72608ac7f81fbb073ed33b5d04782e655f19a100302c3610ada2",
+      "replicons": 4,
+      "default_import_roundtrip": "passed"
+    },
+    {
+      "isolate": "CAV1344",
+      "sha256": "c791accc23e9c991496a230e2d0884ab970a5ed95338a9ac84b840f21c648f76",
+      "replicons": 6,
+      "default_import_roundtrip": "passed"
+    },
+    {
+      "isolate": "CAV1392",
+      "sha256": "7a2086063855c5a076586e735eee36a44152ff0c1fc8067bc298460890594903",
+      "replicons": 4,
+      "default_import_roundtrip": "passed"
+    },
+    {
+      "isolate": "CAV1596",
+      "sha256": "6862a9e63f62594ad812422969d592a734684f0be01e3cd151c6d49c2075b73e",
+      "replicons": 5,
+      "default_import_roundtrip": "passed"
+    }
+  ],
+  "publication_xml_sha256": "5be600b0fc3bc54e5c7381e6f91a3542a90552fe74e839af393a405419ee8fca",
+  "figure2_sha256": "0857526e394bd1053165e79dd806eeea5ede74a689df83754fb744dc3a257e31",
+  "curation": "Containment only from publication; no nucleotide boundaries or sequence changes."
+}
