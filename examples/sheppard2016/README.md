@@ -20,4 +20,17 @@ Run from the repository root with Python 3.10 or later; no extra packages are re
 python3 examples/sheppard2016/prepare_examples.py
 ```
 
-The script builds the six publication-derived records, verifies their parse/serialise round trips, renders their containment views, and runs four structural queries. The four-isolate collection can be pasted directly into the [browser visualiser](https://cell-format.vercel.app/).
+The script builds the six publication-derived records, verifies their parse/serialise round trips, and runs four structural queries. The four-isolate collection can be pasted directly into the [browser visualiser](https://cell-format.vercel.app/).
+
+
+To regenerate the containment SVGs and composed manuscript Figure 3 with the browser renderer, compile the TypeScript modules and run the composition script:
+
+```sh
+webapp/node_modules/.bin/tsc webapp/src/cellgen/parser.ts webapp/src/cellgen/types.ts webapp/src/cellgen/containmentRenderer.ts --outDir /tmp/cellgen-sheppard-parser --module es2022 --target es2022 --moduleResolution bundler --skipLibCheck --strict
+printf '{"type":"module"}\n' > /tmp/cellgen-sheppard-parser/package.json
+node examples/sheppard2016/render_figure.mjs /tmp/cellgen-sheppard-parser
+rsvg-convert -w 2400 -o figures/Figure_3_Sheppard_collection.png figures/Figure_3_Sheppard_collection.svg
+rsvg-convert -f pdf -o figures/Figure_3_Sheppard_collection.pdf figures/Figure_3_Sheppard_collection.svg
+```
+
+This requires the webapp development dependencies and librsvg. The renderer checks that every named entity is visible in each containment SVG and that the line-broken display records still parse. [Figure 3](../../figures/Figure_3_Sheppard_collection.png) is provided in PNG, SVG and PDF formats.

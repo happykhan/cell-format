@@ -52,55 +52,11 @@ These images are static exports from the visualiser's circular and containment v
 
 ## Examples from the manuscript
 
-The manuscript uses three published structures to demonstrate nested containment. The notation below shows the entities and their types; the [full records](examples/published_structures/README.md) also retain source annotations, including coordinates where available.
+The manuscript compares six published plasmid components from four *Klebsiella pneumoniae* isolates in [Sheppard et al. (2016)](https://doi.org/10.1128/AAC.00464-16). The examples distinguish the authors’ plasmid groups from the presence and enclosing context of the selected gene-containing element.
 
-### Tn21
+<img src="figures/Figure_3_Sheppard_collection.png" width="1000" alt="Six containment diagrams with their CellGen strings, comparing the published plasmid contexts in the Sheppard collection.">
 
-The transposon Tn21 contains the integron In2, which contains an `aadA1` gene cassette and its gene. See [Liebert et al. (1999)](https://doi.org/10.1128/MMBR.63.3.507-522.1999) and the [full Tn21 record](examples/published_structures/Tn21.cellgen).
-
-```text
-{
-  {
-    { {}aadA1[type="gene"] }aadA1_cassette[type="gene_cassette"]
-  }In2[type="integron"]
-}Tn21[type="transposon", accession="AF071413.3"]
-```
-
-<img src="docs/images/manuscript-tn21.png" width="340" alt="Containment view showing aadA1 inside its gene cassette, inside integron In2, inside transposon Tn21.">
-
-### pKpQIL
-
-The plasmid pKpQIL contains Tn4401a, with `blaKPC-3`, ISKpn7 and ISKpn6 represented inside the transposon. See [Leavitt et al. (2010)](https://doi.org/10.1128/AAC.00175-10) and the [full pKpQIL record](examples/published_structures/pKpQIL.cellgen).
-
-```text
-{
-  {
-    {}ISKpn7[type="IS"],
-    {}blaKPC-3[type="gene"],
-    {}ISKpn6[type="IS"]
-  }Tn4401a[type="transposon"]
-}pKpQIL[type="plasmid", accession="GU595196.1"]
-```
-
-<img src="docs/images/manuscript-pkpqil.png" width="340" alt="Containment view showing ISKpn7, blaKPC-3 and ISKpn6 inside Tn4401a inside plasmid pKpQIL.">
-
-### pOXA-48a
-
-The plasmid pOXA-48a contains Tn1999, with `blaOXA-48` and two copies of IS1999 represented inside the transposon. See [Poirel et al. (2012)](https://doi.org/10.1128/AAC.05289-11) and the [full pOXA-48a record](examples/published_structures/pOXA-48a.cellgen).
-
-```text
-{
-  {
-    {}IS1999[type="IS", copy="1"],
-    {}blaOXA-48[type="gene"],
-    {}IS1999[type="IS", copy="2"]
-  }Tn1999[type="transposon"]
-}pOXA-48a[type="plasmid", accession="JN626286.1"]
-```
-
-<img src="docs/images/manuscript-poxa48a.png" width="340" alt="Containment view showing two copies of IS1999 and blaOXA-48 inside Tn1999 inside plasmid pOXA-48a.">
-
-The [query example](examples/published_structures/README.md) retrieves each gene's enclosing cassette, integron, transposon and plasmid from these records. The manuscript's [Figure 3](figures/Figure_3_published_structures.png) shows the three structures together.
+The [full records and provenance](examples/sheppard2016/README.md) retain source accession versions, entity types and publication-derived relationships. The [query results](examples/sheppard2016/query-results.tsv) retrieve the enclosing entities and published group attributes. Paste the [four-cell collection](examples/sheppard2016/collection.cellgen) into the [visualiser](https://cell-format.vercel.app/) to explore it.
 
 ## Grammar
 

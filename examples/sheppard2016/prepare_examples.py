@@ -9,7 +9,7 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / 'python'))
-from cellgen import parse, render_svg, to_cellgen
+from cellgen import parse, to_cellgen
 from cellgen.types import Cell, CellSet, EntityNode
 
 DOI = '10.1128/AAC.00464-16'
@@ -51,7 +51,6 @@ def main():
         parsed = parse(text)
         assert asdict(parsed) == asdict(cellset), entry['record']
         (records / (entry['record'] + '.cellgen')).write_text(text + '\n')
-        (records / (entry['record'] + '.svg')).write_text(render_svg(parsed))
         trees.append({'record': entry['record'], 'cellgen': text, 'tree': asdict(parsed)})
         cells[entry['isolate']].append(root)
         matches = [(node, ancestors) for node, ancestors in walk(parsed.cells[0].replicons[0])
